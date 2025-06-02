@@ -3,12 +3,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import os
 from datetime import datetime, timedelta
-import numpy as np
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import classification_report
 
-# ========== Konfigurasi ==========
+# ========== Pengaturan Data ==========
 DATA_FOLDER = "user_data"
 os.makedirs(DATA_FOLDER, exist_ok=True)
 
@@ -32,55 +28,157 @@ saran_dict = {
     "😊 Bahagia": "Wah, kamu lagi di atas angin! Simpan energi ini dan bagi kebahagiaanmu ke orang terdekat, yuk."
 }
 
-# ========== ML TRAINING ==========
-def buat_dataset_sintetis():
-    data = []
-    for _ in range(200):
-        akademik = np.random.randint(0, 10)
-        sosial = np.random.randint(0, 10)
-        kesehatan = np.random.randint(0, 10)
-        rating = np.random.randint(1, 6)
-        total = akademik + sosial + kesehatan + rating * 2
-        if total < 15:
-            label = "😢 Sedih"
-        elif total < 22:
-            label = "😐 Biasa"
+def classify_mood(score):
+    if score < 10:
+        mood = "😢 Sedih"
+    elif score < 20:
+        mood = "😐 Biasa"
+    else:
+        mood = "😊 Bahagia"
+    return mood, saran_dict[mood]
+
+def diagnosis_kaggle(score):
+    if score >= 22:
+        return "Aktivitasmu menunjukkan keseimbangan yang baik antara fisik, sosial, dan akademik. Ini mendekati pola optimal dalam dataset FitLife."
+    elif score >= 15:
+        return "Kamu menjalani hari yang cukup seimbang, meskipun masih bisa ditingkatkan dengan aktivitas sehat seperti olahraga atau tidur cukup."
+    else:
+        return "Dalam data FitLife, skor rendah sering berkaitan dengan kurangnya aktivitas sosial dan kesehatan. Coba ubah rutinitas agar lebih positif."
+
+def simpan_data(username, tanggal, aktivitas_data, rating, mood, saran, catatan, diagnosis):
+    filename = f"{DATA_FOLDER}/data_{username}.csv"
+    records = []
+    for kategori, aktivitas in aktivitas_data.items():
+        skor = aktivitas_skor.get(aktivitas, 0)
+        records.append([tanggal, kategori, aktivitas, skor, rating, mood, saran, catatan, diagnosis])
+    df_new = pd.DataFrame(records, columns=["Tanggal", "Kategori", "Aktivitas", "Skor", "Rating", "Mood", "Saran", "Catatan", "Diagnosis"])
+    if os.path.exists(filename):
+        df = pd.read_csv(filename)
+        df = pd.concat([df, df_new], ignore_index=True)
+    else:
+        df = df_new
+    df.to_csv(filename, index=False)
+
+def hitung_streak(df):
+    df['Tanggal'] = pd.to_datetime(df['Tanggal'])
+    df = df.sort_values('Tanggal', ascending=False)
+    streak = 0
+    today = datetime.now().date()
+    for t in df['Tanggal']:
+        if t.date() == today - timedelta(days=streak):
+            streak += 1
         else:
-            label = "😊 Bahagia"
-        data.append([akademik, sosial, kesehatan, rating, label])
-    return pd.DataFrame(data, columns=["Akademik", "Sosial", "Kesehatan", "Rating", "Mood"])
-
-@st.cache_resource
-def train_model():
-    df = buat_dataset_sintetis()
-    X = df[["Akademik", "Sosial", "Kesehatan", "Rating"]]
-    y = df["Mood"]
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    model = RandomForestClassifier()
-    model.fit(X_train, y_train)
-    y_pred = model.predict(X_test)
-    report = classification_report(y_test, y_pred, output_dict=True)
-    return model, report
-
-model, report = train_model()
+            break
+    return streak
 
 # ========== Streamlit UI ==========
-st.set_page_config(page_title="SmartMood ML", layout="centered")
-st.title("🤖 SmartMood Tracker + ML")
+st.set_page_config(page_title="SmartMood Tracker", layout="centered")
+st.title("🧠 SmartMood Tracker")
+st.write("Refleksi mood kamu berdasarkan aktivitas harian 💡")
 
-st.subheader("Input Aktivitas Harian")
-akademik = st.slider("Skor Akademik", 0, 10, 5)
-sosial = st.slider("Skor Sosial", 0, 10, 5)
-kesehatan = st.slider("Skor Kesehatan", 0, 10, 5)
-rating = st.slider("Rating mood hari ini (1-5)", 1, 5, 3)
+if "login" not in st.session_state:
+    st.session_state.login = False
+if "username" not in st.session_state:
+    st.session_state.username = ""
 
-if st.button("🔍 Prediksi Mood"):
-    features = [[akademik, sosial, kesehatan, rating]]
-    pred = model.predict(features)[0]
-    st.success(f"Prediksi mood kamu: {pred}")
-    st.info(f"Saran: {saran_dict[pred]}")
+if not st.session_state.login:
+    username = st.text_input("Masukkan username:")
+    password = st.text_input("Password (simulasi)", type="password")
+    if st.button("🔐 Login"):
+        if username and password:
+            st.session_state.login = True
+            st.session_state.username = username
+        else:
+            st.warning("Masukkan username dan password dengan benar.")
 
-st.markdown("---")
-st.subheader("📊 Evaluasi Model")
-st.json(report)
- 
+if st.session_state.login:
+    username = st.session_state.username
+    st.success(f"Login sebagai **{username}**")
+    file = f"{DATA_FOLDER}/data_{username}.csv"
+
+    menu = st.sidebar.selectbox("📋 Menu", [
+        "Input Mood Harian", 
+        "Lihat Grafik Mood", 
+        "Lihat Data CSV", 
+        "Reset Data", 
+        "Tentang", 
+        "Logout"])
+
+    if menu == "Input Mood Harian":
+        st.header("✍️ Input Mood & Aktivitas")
+        aktivitas_data = {}
+        total_skor = 0
+        for kategori, daftar in kategori_aktivitas.items():
+            pilihan = st.selectbox(f"{kategori}", ["(Pilih satu)"] + daftar, key=kategori)
+            if pilihan != "(Pilih satu)":
+                aktivitas_data[kategori] = pilihan
+                total_skor += aktivitas_skor.get(pilihan, 0)
+
+        rating = st.slider("Rating mood hari ini (1-5)", 1, 5, 3)
+        catatan = st.text_area("Catatan harian (opsional):")
+        tanggal = datetime.now().strftime("%Y-%m-%d")
+
+        if st.button("✅ Simpan"):
+            mood, saran = classify_mood(total_skor + rating * 2)
+            diagnosis = diagnosis_kaggle(total_skor + rating * 2)
+            simpan_data(username, tanggal, aktivitas_data, rating, mood, saran, catatan, diagnosis)
+            st.success(f"Mood kamu hari ini: {mood}")
+            st.info(f"Saran: {saran}")
+            st.warning(f"🔍 Diagnosis menurut data FitLife: {diagnosis}")
+
+    elif menu == "Lihat Grafik Mood":
+        st.header("📊 Grafik Mood Harian")
+        if not os.path.exists(file):
+            st.warning("Belum ada data.")
+        else:
+            df = pd.read_csv(file)
+            if len(df) < 3:
+                st.warning("Data belum cukup (min. 3 hari).")
+            else:
+                df['Tanggal'] = pd.to_datetime(df['Tanggal'])
+                df_daily = df.groupby("Tanggal").mean(numeric_only=True).reset_index()
+                warna = df.groupby("Tanggal")["Mood"].last().map(lambda m: "green" if "Bahagia" in m else ("gold" if "Biasa" in m else "blue"))
+                fig, ax = plt.subplots(figsize=(10,4))
+                ax.bar(df_daily["Tanggal"].dt.strftime("%d-%b"), df_daily["Skor"], color=warna)
+                ax.set_title(f"Mood Harian - {username}")
+                ax.set_xlabel("Tanggal")
+                ax.set_ylabel("Skor Mood")
+                ax.grid(True)
+                st.pyplot(fig)
+
+                streak = hitung_streak(df)
+                st.success(f"🔥 Konsistensi: {streak} hari berturut-turut!")
+
+    elif menu == "Lihat Data CSV":
+        st.header("📂 Data Aktivitas & Mood")
+        if not os.path.exists(file):
+            st.warning("Belum ada data.")
+        else:
+            df_user = pd.read_csv(file)
+            st.dataframe(df_user)
+            st.download_button("⬇️ Unduh Data CSV", data=df_user.to_csv(index=False), file_name=f"data_{username}.csv", mime="text/csv")
+
+    elif menu == "Reset Data":
+        if st.button("❌ Reset semua data"):
+            if os.path.exists(file):
+                os.remove(file)
+                st.success("Data berhasil direset.")
+            else:
+                st.warning("Tidak ada data untuk dihapus.")
+
+    elif menu == "Tentang":
+        st.header("📘 Tentang SmartMood")
+        st.markdown("""
+        SmartMood Tracker membantumu melacak suasana hati berdasarkan aktivitas harian.  
+        Fitur:
+        - Input 4 kategori aktivitas & rating harian
+        - Klasifikasi otomatis mood
+        - Saran empatik & reflektif
+        - Grafik perkembangan mood
+        - Deteksi *streak* harian (konsistensi)
+        - Diagnostik berbasis pola dari dataset FitLife
+        """)
+
+    elif menu == "Logout":
+        st.session_state.login = False
+        st.rerun()
