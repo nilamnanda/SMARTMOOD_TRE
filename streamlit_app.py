@@ -72,15 +72,20 @@ st.write("Refleksi mood kamu berdasarkan aktivitas harian 💡")
 username = st.text_input("Masukkan username:")
 password = st.text_input("Password (hanya simulasi)", type="password")
 
-if login_state:
-   username = st.text_input("Masukkan username:")
+username = st.text_input("Masukkan username:")
 password = st.text_input("Password (simulasi)", type="password")
+
 login_state = False
 if st.button("🔐 Login"):
     if username and password:
         login_state = True
     else:
         st.warning("Masukkan username dan password dengan benar.")
+
+if login_state:
+    st.success(f"Login sebagai **{username}**")
+    # tampilkan menu dan fitur lain di sini...
+
 
 
     menu = st.sidebar.selectbox("📋 Menu", ["Input Mood Harian", "Lihat Grafik Mood", "Reset Data", "Tentang"])
