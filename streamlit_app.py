@@ -73,13 +73,14 @@ username = st.text_input("Masukkan username:")
 password = st.text_input("Password (hanya simulasi)", type="password")
 
 if login_state:
-    st.success(f"Login sebagai **{username}**")
-    # Menampilkan data CSV pengguna setelah login
-file = f"{DATA_FOLDER}/data_{username}.csv"
-if os.path.exists(file):
-    st.subheader("📂 Riwayat Data Kamu")
-    df_user = pd.read_csv(file)
-    st.dataframe(df_user)
+   username = st.text_input("Masukkan username:")
+password = st.text_input("Password (simulasi)", type="password")
+login_state = False
+if st.button("🔐 Login"):
+    if username and password:
+        login_state = True
+    else:
+        st.warning("Masukkan username dan password dengan benar.")
 
 
     menu = st.sidebar.selectbox("📋 Menu", ["Input Mood Harian", "Lihat Grafik Mood", "Reset Data", "Tentang"])
