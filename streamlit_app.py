@@ -1,164 +1,118 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
-from datetime import datetime, timedelta
-import os
-from st_aggrid import AgGrid, GridOptionsBuilder
+from datetime import datetime
 
+# Konfigurasi halaman
 st.set_page_config(page_title="SmartMood Tracker", layout="wide")
-st.title("🧠 SmartMood Tracker - Versi Kompleks")
 
-# Inisialisasi skor aktivitas
-aktivitas_skor = {
-    "Olahraga": 3,
-    "Tidur cukup": 2,
-    "Main HP berlebihan": -2,
-    "Makan sehat": 2,
-    "Tugas selesai": 4,
-    "Overthinking": -3,
-    "Nugas mendekati deadline": -2,
-    "Belajar santai": 1,
-    "Nonton film": 1,
-    "Scroll TikTok": -1,
-    "Curhat dengan teman": 3
-}
+st.title("🧠 SmartMood: Daily Emotion & Activity Tracker")
 
-# Fungsi klasifikasi mood
-def classify_mood(score):
-    if score >= 8:
-        return "Bahagia", "Pertahankan rutinitas positif kamu!"
-    elif score >= 5:
-        return "Cukup Baik", "Kamu berada di jalur yang benar."
-    elif score >= 2:
-        return "Biasa saja", "Coba tambahkan aktivitas menyenangkan."
-    elif score >= 0:
-        return "Kurang Baik", "Coba hindari hal-hal negatif."
-    else:
-        return "Buruk", "Butuh self-care dan support segera."
+# Inisialisasi data
+if "data" not in st.session_state:
+    st.session_state.data = pd.DataFrame(columns=["date", "activity", "mood"])
 
-# Fungsi untuk menyimpan data
-@st.cache_data
+# ======================= INPUT HARIAN =========================
+st.header("📥 Input Mood dan Aktivitas Harian")
 
-def load_data(file):
-    return pd.read_csv(file)
+col1, col2 = st.columns(2)
+with col1:
+    selected_date = st.date_input("Tanggal", datetime.now())
+with col2:
+    activity = st.text_input("Aktivitas hari ini (misal: belajar, olahraga, rebahan)")
 
-def save_to_csv(data, filename):
-    df = pd.DataFrame(data)
-    if os.path.exists(filename):
-        df_existing = pd.read_csv(filename)
-        df = pd.concat([df_existing, df], ignore_index=True)
-    df.to_csv(filename, index=False)
+mood = st.slider("Skor Mood (1=buruk, 5=baik)", 1, 5, 3)
 
-# Fungsi rekursif (untuk penilaian UAS)
-def recursive_sum(lst):
-    if not lst:
-        return 0
-    return lst[0] + recursive_sum(lst[1:])
+if st.button("💾 Simpan"):
+    new_row = {"date": selected_date, "activity": activity, "mood": mood}
+    st.session_state.data = pd.concat([st.session_state.data, pd.DataFrame([new_row])], ignore_index=True)
+    st.success("✅ Data berhasil disimpan!")
 
-# Fungsi rekomendasi berdasarkan histori
+st.divider()
 
-def rekomendasi_berbasis_histori(df):
-    top_mood = df[df['Mood'].str.contains("Bahagia")]
-    if top_mood.empty:
-        return "Belum cukup data bahagia untuk rekomendasi."
-    rekom = top_mood['Aktivitas'].value_counts().idxmax()
-    return f"Berdasarkan histori, coba lakukan aktivitas: **{rekom}** untuk mood terbaik!"
+# ======================= TAMPILKAN DATA ========================
+st.header("📊 Data yang Tersimpan")
 
-# Menu navigasi
-menu = st.sidebar.selectbox("Menu", ["Input Harian", "Grafik Mood", "Data CSV", "Simulasi Mood"])
-file = "smartmood_data.csv"
+df = st.session_state.data.copy()
+if not df.empty:
+    df["date"] = pd.to_datetime(df["date"])
+    df = df.sort_values("date")
+    st.dataframe(df, use_container_width=True)
+else:
+    st.info("Belum ada data, silakan input terlebih dahulu.")
 
-if menu == "Input Harian":
-    st.header("✍️ Catat Mood Harian Kamu")
-    nama = st.text_input("Nama lengkap")
-    aktivitas = []
-    for i in range(1, 4):
-        pilihan = st.selectbox(f"Aktivitas #{i}", ["(Pilih aktivitas)"] + list(aktivitas_skor.keys()), key=i)
-        if pilihan != "(Pilih aktivitas)":
-            aktivitas.append(pilihan)
+st.divider()
 
-    rating = st.slider("Rating mood kamu hari ini (1-5)", 1, 5)
+# ======================= TREN MOOD MINGGUAN =====================
+if not df.empty:
+    st.header("📈 Tren Mood Mingguan (Line Chart)")
+    df["week"] = df["date"].dt.isocalendar().week
+    weekly_mood = df.groupby("week")["mood"].mean()
+    st.line_chart(weekly_mood)
 
-    if st.button("💾 Simpan Catatan"):
-        skor_total = recursive_sum([aktivitas_skor.get(a, 0) for a in aktivitas]) + rating * 2
-        mood, saran = classify_mood(skor_total)
-        today = datetime.now().strftime("%Y-%m-%d")
-        data = [{"Tanggal": today, "Nama": nama, "Aktivitas": ", ".join(aktivitas), "Rating": rating, "Skor": skor_total, "Mood": mood}]
-        save_to_csv(data, file)
-        st.success(f"Data disimpan! Mood kamu hari ini: {mood} 🧠")
-        st.info(f"Saran: {saran}")
+# ======================= HEATMAP MOOD ===========================
+    st.header("🗓️ Heatmap Mood Mingguan (Kalender Visual)")
 
-        if os.path.exists(file):
-            df_histori = pd.read_csv(file)
-            st.info(rekomendasi_berbasis_histori(df_histori))
+    df["weekday"] = df["date"].dt.weekday  # 0=Mon ... 6=Sun
+    df["week"] = df["date"].dt.isocalendar().week
+    weeks = sorted(df["week"].unique())
+    heatmap_data = np.full((7, len(weeks)), np.nan)
+    week_map = {week: i for i, week in enumerate(weeks)}
 
-elif menu == "Grafik Mood":
-    st.header("📊 Grafik Analisis Mood")
-    if os.path.exists(file):
-        df = pd.read_csv(file)
-        df["Tanggal"] = pd.to_datetime(df["Tanggal"])
+    for _, row in df.iterrows():
+        week_idx = week_map[row["week"]]
+        heatmap_data[int(row["weekday"]), week_idx] = row["mood"]
 
-        st.subheader("Mood Score per Hari")
-        fig, ax = plt.subplots()
-        df_grouped = df.groupby("Tanggal")["Skor"].mean()
-        ax.plot(df_grouped.index, df_grouped.values, marker='o')
-        ax.set_ylabel("Skor")
-        ax.set_title("Mood Score Harian")
-        st.pyplot(fig)
+    fig, ax = plt.subplots(figsize=(10, 4))
+    cax = ax.imshow(heatmap_data, cmap="YlOrBr", aspect="auto", vmin=1, vmax=5)
 
-        st.subheader("📈 Tren Skor Mingguan per Kategori")
-        last_week = df[df['Tanggal'] >= (datetime.now() - timedelta(days=7))]
-        trend_data = last_week.copy()
-        trend_data["Kategori"] = trend_data["Aktivitas"].str.split(", ").explode()
-        trend_group = trend_data.groupby(["Tanggal", "Kategori"])["Skor"].mean().reset_index()
-        pivot = trend_group.pivot(index="Tanggal", columns="Kategori", values="Skor")
+    ax.set_yticks(np.arange(7))
+    ax.set_yticklabels(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"])
+    ax.set_xticks(np.arange(len(weeks)))
+    ax.set_xticklabels([f"Minggu {w}" for w in weeks])
 
-        fig2, ax2 = plt.subplots(figsize=(10, 4))
-        pivot.plot(ax=ax2, marker='o')
-        ax2.set_title("Tren Skor Rata-Rata Mingguan per Kategori")
-        ax2.set_ylabel("Skor")
-        ax2.legend(title="Kategori")
-        st.pyplot(fig2)
+    for i in range(7):
+        for j in range(len(weeks)):
+            if not np.isnan(heatmap_data[i, j]):
+                ax.text(j, i, int(heatmap_data[i, j]), ha="center", va="center", color="black")
 
-        st.subheader("📅 Heatmap Kalender Mood")
-        df_calendar = df.groupby("Tanggal")["Skor"].mean().reset_index()
-        df_calendar['Tanggal'] = pd.to_datetime(df_calendar['Tanggal'])
-        df_calendar['Day'] = df_calendar['Tanggal'].dt.day
-        df_calendar['Week'] = df_calendar['Tanggal'].dt.isocalendar().week
-        pivot_heatmap = df_calendar.pivot_table(index='Week', columns='Day', values='Skor', aggfunc='mean')
+    plt.colorbar(cax, ax=ax, label="Skor Mood")
+    st.pyplot(fig)
 
-        fig3, ax3 = plt.subplots(figsize=(10, 4))
-        sns.heatmap(pivot_heatmap, cmap="YlGnBu", linewidths=0.5, ax=ax3, cbar_kws={"label": "Skor Mood"})
-        ax3.set_title("Heatmap Kalender Mood (mingguan)")
-        st.pyplot(fig3)
+# ======================= SIMULASI MOOD ==========================
+    st.header("🔮 Simulasi Mood Berdasarkan Aktivitas")
 
-elif menu == "Data CSV":
-    st.header("📂 Data CSV")
-    if os.path.exists(file):
-        df_user = pd.read_csv(file)
-        st.subheader("📊 Tabel Interaktif")
-        gb = GridOptionsBuilder.from_dataframe(df_user)
-        gb.configure_pagination()
-        gb.configure_side_bar()
-        gb.configure_default_column(filterable=True, sortable=True, resizable=True)
-        gridOptions = gb.build()
-        AgGrid(df_user, gridOptions=gridOptions, height=300)
-    else:
-        st.warning("Belum ada data.")
+    with st.expander("Coba simulasi prediksi mood"):
+        options = {
+            "belajar": 3,
+            "olahraga": 5,
+            "rebahan": 2,
+            "nongkrong": 4,
+            "tidur cukup": 5,
+            "kerja kelompok": 3,
+        }
+        act = st.selectbox("Pilih aktivitas", list(options.keys()))
+        st.info(f"Prediksi mood setelah **{act}**: {options[act]} / 5")
 
-elif menu == "Simulasi Mood":
-    st.header("🔁 Simulasi Mood Harian")
-    aktivitas_simulasi = []
-    for i in range(1, 4):
-        pilihan = st.selectbox(f"Aktivitas #{i}", ["(Pilih aktivitas)"] + list(aktivitas_skor.keys()), key=f"sim_{i}")
-        if pilihan != "(Pilih aktivitas)":
-            aktivitas_simulasi.append(pilihan)
+# ======================= STATISTIK RINGKASAN ===================
+    st.header("📌 Statistik Singkat")
 
-    rating_sim = st.slider("Rating mood simulasi (1-5)", 1, 5, 3)
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("📆 Hari tercatat", df["date"].nunique())
+    with col2:
+        st.metric("😊 Mood rata-rata", round(df["mood"].mean(), 2))
+    with col3:
+        st.metric("🏃 Aktivitas unik", df["activity"].nunique())
 
-    if st.button("🔍 Simulasikan"):
-        skor_total = recursive_sum([aktivitas_skor.get(a, 0) for a in aktivitas_simulasi]) + rating_sim * 2
-        mood, saran = classify_mood(skor_total)
-        st.success(f"Hasil simulasi mood: {mood}")
-        st.info(f"Saran: {saran}")
+    # Export to CSV
+    st.download_button("⬇️ Download Data sebagai CSV", df.to_csv(index=False), file_name="smartmood_data.csv", mime="text/csv")
+
+# ======================= LOGOUT / AKHIR =========================
+st.divider()
+st.markdown("🔚 Terima kasih telah menggunakan **SmartMood**! Jaga terus kesehatan mentalmu 💖")
+
+if st.button("🚪 Logout (Reset Aplikasi)"):
+    st.session_state.clear()
+    st.experimental_rerun()
