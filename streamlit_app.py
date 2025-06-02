@@ -1,49 +1,12 @@
+# (seluruh import dan pengaturan awal tetap sama)
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import os
+import numpy as np
 from datetime import datetime, timedelta
 
-# ========== Pengaturan Data ==========
-DATA_FOLDER = "user_data"
-os.makedirs(DATA_FOLDER, exist_ok=True)
-
-aktivitas_skor = {
-    "Belajar": 5, "Ngerjain tugas": 6, "Proyekan": 7, "Dikejar deadline": 3, "Ikut kelas/zoom": 5,
-    "Bertemu teman": 8, "Rapat organisasi": 6, "Nongkrong": 7, "Diam di kos": 3, "Chat panjang": 6,
-    "Tidur cukup": 9, "Makan sehat": 7, "Olahraga": 8, "Begadang": 2, "Lupa makan": 1,
-    "Scroll TikTok": 3, "Main game": 4, "Nonton film": 5, "Ngegalau": 2, "Tidak melakukan apa-apa": 1
-}
-
-kategori_aktivitas = {
-    "Akademik": ["Belajar", "Ngerjain tugas", "Proyekan", "Dikejar deadline", "Ikut kelas/zoom"],
-    "Sosial": ["Bertemu teman", "Rapat organisasi", "Nongkrong", "Diam di kos", "Chat panjang"],
-    "Kesehatan": ["Tidur cukup", "Makan sehat", "Olahraga", "Begadang", "Lupa makan"],
-    "Lainnya": ["Scroll TikTok", "Main game", "Nonton film", "Ngegalau", "Tidak melakukan apa-apa"]
-}
-
-saran_dict = {
-    "😢 Sedih": "Sepertinya harimu berat. Coba tarik napas dalam, dengarkan musik tenang, dan beri dirimu ruang untuk istirahat.",
-    "😐 Biasa": "Mungkin hari ini terasa datar, tapi kamu hebat karena tetap menjalani. Pelan-pelan saja, semua baik-baik aja.",
-    "😊 Bahagia": "Wah, kamu lagi di atas angin! Simpan energi ini dan bagi kebahagiaanmu ke orang terdekat, yuk."
-}
-
-def classify_mood(score):
-    if score < 10:
-        mood = "😢 Sedih"
-    elif score < 20:
-        mood = "😐 Biasa"
-    else:
-        mood = "😊 Bahagia"
-    return mood, saran_dict[mood]
-
-def diagnosis_kaggle(score):
-    if score >= 22:
-        return "Aktivitasmu menunjukkan keseimbangan yang baik antara fisik, sosial, dan akademik. Ini mendekati pola optimal dalam dataset FitLife."
-    elif score >= 15:
-        return "Kamu menjalani hari yang cukup seimbang, meskipun masih bisa ditingkatkan dengan aktivitas sehat seperti olahraga atau tidur cukup."
-    else:
-        return "Dalam data FitLife, skor rendah sering berkaitan dengan kurangnya aktivitas sosial dan kesehatan. Coba ubah rutinitas agar lebih positif."
+# ... (aktivitas_skor, kategori_aktivitas, saran_dict, classify_mood, diagnosis_kaggle tetap sama)
 
 def simpan_data(username, tanggal, aktivitas_data, rating, mood, saran, catatan, diagnosis):
     filename = f"{DATA_FOLDER}/data_{username}.csv"
@@ -59,23 +22,15 @@ def simpan_data(username, tanggal, aktivitas_data, rating, mood, saran, catatan,
         df = df_new
     df.to_csv(filename, index=False)
 
-def hitung_streak(df):
-    df['Tanggal'] = pd.to_datetime(df['Tanggal'])
-    df = df.sort_values('Tanggal', ascending=False)
-    streak = 0
-    today = datetime.now().date()
-    for t in df['Tanggal']:
-        if t.date() == today - timedelta(days=streak):
-            streak += 1
-        else:
-            break
-    return streak
+# ... fungsi hitung_streak tetap sama
 
 # ========== Streamlit UI ==========
+
 st.set_page_config(page_title="SmartMood Tracker", layout="centered")
 st.title("🧠 SmartMood Tracker")
 st.write("Refleksi mood kamu berdasarkan aktivitas harian 💡")
 
+# Login sederhana
 if "login" not in st.session_state:
     st.session_state.login = False
 if "username" not in st.session_state:
@@ -106,6 +61,7 @@ if st.session_state.login:
 
     if menu == "Input Mood Harian":
         st.header("✍️ Input Mood & Aktivitas")
+        tanggal = st.date_input("Tanggal aktivitas", datetime.now())
         aktivitas_data = {}
         total_skor = 0
         for kategori, daftar in kategori_aktivitas.items():
@@ -116,12 +72,11 @@ if st.session_state.login:
 
         rating = st.slider("Rating mood hari ini (1-5)", 1, 5, 3)
         catatan = st.text_area("Catatan harian (opsional):")
-        tanggal = datetime.now().strftime("%Y-%m-%d")
 
         if st.button("✅ Simpan"):
             mood, saran = classify_mood(total_skor + rating * 2)
             diagnosis = diagnosis_kaggle(total_skor + rating * 2)
-            simpan_data(username, tanggal, aktivitas_data, rating, mood, saran, catatan, diagnosis)
+            simpan_data(username, tanggal.strftime("%Y-%m-%d"), aktivitas_data, rating, mood, saran, catatan, diagnosis)
             st.success(f"Mood kamu hari ini: {mood}")
             st.info(f"Saran: {saran}")
             st.warning(f"🔍 Diagnosis menurut data FitLife: {diagnosis}")
@@ -177,8 +132,9 @@ if st.session_state.login:
         - Grafik perkembangan mood
         - Deteksi *streak* harian (konsistensi)
         - Diagnostik berbasis pola dari dataset FitLife
+        - Sekarang mendukung input tanggal manual!
         """)
 
     elif menu == "Logout":
-        st.session_state.login = False
+        st.session_state.clear()
         st.rerun()
