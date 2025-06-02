@@ -10,14 +10,14 @@ os.makedirs(DATA_FOLDER, exist_ok=True)
 
 aktivitas_skor = {
     "Belajar": 5, "Ngerjain tugas": 6, "Proyekan": 7, "Dikejar deadline": 3, "Ikut kelas/zoom": 5,
-    "Bertemu teman": 8, "Rapat organisasi": 6, "Nongkrong": 7, "Diam di kos": 3, "Chat panjang": 6,
+    "Bertemu teman": 8, "Rapat organisasi": 6, "Nongkrong": 7, "Diam di kos": 3, "ngegosip": 6,
     "Tidur cukup": 9, "Makan sehat": 7, "Olahraga": 8, "Begadang": 2, "Lupa makan": 1,
     "Scroll TikTok": 3, "Main game": 4, "Nonton film": 5, "Ngegalau": 2, "Tidak melakukan apa-apa": 1
 }
 
 kategori_aktivitas = {
     "Akademik": ["Belajar", "Ngerjain tugas", "Proyekan", "Dikejar deadline", "Ikut kelas/zoom"],
-    "Sosial": ["Bertemu teman", "Rapat organisasi", "Nongkrong", "Diam di kos", "Chat panjang"],
+    "Sosial": ["Bertemu teman", "Rapat organisasi", "Nongkrong", "Diam di kos", "ngegosip"],
     "Kesehatan": ["Tidur cukup", "Makan sehat", "Olahraga", "Begadang", "Lupa makan"],
     "Lainnya": ["Scroll TikTok", "Main game", "Nonton film", "Ngegalau", "Tidak melakukan apa-apa"]
 }
