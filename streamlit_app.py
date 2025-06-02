@@ -76,16 +76,23 @@ st.set_page_config(page_title="SmartMood Tracker", layout="centered")
 st.title("🧠 SmartMood Tracker")
 st.write("Refleksi mood kamu berdasarkan aktivitas harian 💡")
 
-username = st.text_input("Masukkan username:")
-password = st.text_input("Password (simulasi)", type="password")
-login_state = False
-if st.button("🔐 Login"):
-    if username and password:
-        login_state = True
-    else:
-        st.warning("Masukkan username dan password dengan benar.")
+if "login" not in st.session_state:
+    st.session_state.login = False
+if "username" not in st.session_state:
+    st.session_state.username = ""
 
-if login_state:
+if not st.session_state.login:
+    username = st.text_input("Masukkan username:")
+    password = st.text_input("Password (simulasi)", type="password")
+    if st.button("🔐 Login"):
+        if username and password:
+            st.session_state.login = True
+            st.session_state.username = username
+        else:
+            st.warning("Masukkan username dan password dengan benar.")
+
+if st.session_state.login:
+    username = st.session_state.username
     st.success(f"Login sebagai **{username}**")
     file = f"{DATA_FOLDER}/data_{username}.csv"
 
@@ -173,4 +180,5 @@ if login_state:
         """)
 
     elif menu == "Logout":
-        st.warning("Kamu telah logout. Silakan refresh halaman untuk login kembali.")
+        st.session_state.login = False
+        st.rerun()
