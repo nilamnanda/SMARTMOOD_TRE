@@ -28,7 +28,6 @@ saran_dict = {
     "😊 Bahagia": "Wah, kamu lagi di atas angin! Simpan energi ini dan bagi kebahagiaanmu ke orang terdekat, yuk."
 }
 
-# ========== Fungsi Pendukung ==========
 def classify_mood(score):
     if score < 10:
         mood = "😢 Sedih"
@@ -69,30 +68,28 @@ st.set_page_config(page_title="SmartMood Tracker", layout="centered")
 st.title("🧠 SmartMood Tracker")
 st.write("Refleksi mood kamu berdasarkan aktivitas harian 💡")
 
-username = st.text_input("Masukkan username:")
-password = st.text_input("Password (hanya simulasi)", type="password")
+# Login State
+if "login" not in st.session_state:
+    st.session_state.login = False
 
-username = st.text_input("Masukkan username:")
-password = st.text_input("Password (simulasi)", type="password")
-
-login_state = False
-if st.button("🔐 Login"):
+if not st.session_state.login:
+    username = st.text_input("Masukkan username:")
+    password = st.text_input("Password (simulasi)", type="password")
     if username and password:
-        login_state = True
+        st.session_state.username = username
+        st.session_state.login = True
+        st.rerun()
     else:
-        st.warning("Masukkan username dan password dengan benar.")
-
-if login_state:
+        st.warning("Masukkan username dan password.")
+else:
+    username = st.session_state.username
     st.success(f"Login sebagai **{username}**")
-    # tampilkan menu dan fitur lain di sini...
+    menu = st.sidebar.selectbox("📋 Menu", ["Input Mood Harian", "Lihat Grafik Mood", "Reset Data", "Tentang", "Logout"])
 
-
-
-    menu = st.sidebar.selectbox("📋 Menu", ["Input Mood Harian", "Lihat Grafik Mood", "Reset Data", "Tentang"])
+    file = f"{DATA_FOLDER}/data_{username}.csv"
 
     if menu == "Input Mood Harian":
         st.header("✍️ Input Mood & Aktivitas")
-
         aktivitas_data = {}
         total_skor = 0
         for kategori, daftar in kategori_aktivitas.items():
@@ -111,9 +108,14 @@ if login_state:
             st.success(f"Mood kamu hari ini: {mood}")
             st.info(f"Saran: {saran}")
 
+            if os.path.exists(file):
+                st.subheader("📂 Riwayat Data Kamu")
+                df_user = pd.read_csv(file)
+                st.dataframe(df_user)
+                st.download_button("⬇️ Unduh Data CSV", data=df_user.to_csv(index=False), file_name=f"data_{username}.csv", mime="text/csv")
+
     elif menu == "Lihat Grafik Mood":
         st.header("📊 Grafik Mood Harian")
-        file = f"{DATA_FOLDER}/data_{username}.csv"
         if not os.path.exists(file):
             st.warning("Belum ada data.")
         else:
@@ -131,12 +133,10 @@ if login_state:
                 ax.set_ylabel("Skor Mood")
                 ax.grid(True)
                 st.pyplot(fig)
-
                 streak = hitung_streak(df)
                 st.success(f"🔥 Konsistensi: {streak} hari berturut-turut!")
 
     elif menu == "Reset Data":
-        file = f"{DATA_FOLDER}/data_{username}.csv"
         if st.button("❌ Reset semua data"):
             if os.path.exists(file):
                 os.remove(file)
@@ -156,6 +156,6 @@ if login_state:
         - Deteksi *streak* harian (konsistensi)
         """)
 
-
-# (kode yang sama seperti di langkah sebelumnya, dipotong karena panjang)
-# SmartMood versi Streamlit sudah disiapkan di file streamlit_app.py
+    elif menu == "Logout":
+        st.session_state.login = False
+        st.rerun()
