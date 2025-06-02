@@ -72,7 +72,7 @@ st.write("Refleksi mood kamu berdasarkan aktivitas harian 💡")
 username = st.text_input("Masukkan username:")
 password = st.text_input("Password (hanya simulasi)", type="password")
 
-if username:
+if login_state:
     st.success(f"Login sebagai **{username}**")
     # Menampilkan data CSV pengguna setelah login
 file = f"{DATA_FOLDER}/data_{username}.csv"
