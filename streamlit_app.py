@@ -1,94 +1,130 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime
+import numpy as np
+import matplotlib.pyplot as plt
 import os
+from datetime import datetime
 
-# 🟢 HARUS PALING ATAS (setelah import)
-st.set_page_config(page_title="SmartMood", layout="centered")
+# ========== Konfigurasi Awal ==========
+st.set_page_config(page_title="SmartMood Tracker", layout="wide")
+st.title("🧠 SmartMood Tracker")
 
-# --------------------------
-# 🔐 Simulasi login user
-# --------------------------
-# Data login (bisa kamu ganti ke file JSON atau DB)
-USER_CREDENTIALS = {
-    "nilam": "1234",
-    "andi": "5678",
-    "budi": "abcd"
-}
+DATA_FOLDER = "user_data"
+os.makedirs(DATA_FOLDER, exist_ok=True)
 
-# --------------------------
-# 📦 Setup session
-# --------------------------
-if "logged_in" not in st.session_state:
-    st.session_state.logged_in = False
+# ========== Login Simulasi ==========
+if "login" not in st.session_state:
+    st.session_state.login = False
 if "username" not in st.session_state:
     st.session_state.username = ""
 
-# --------------------------
-# 🔐 Login Form
-# --------------------------
-if not st.session_state.logged_in:
-    st.title("🧠 SmartMood Tracker - Versi Multi User")
-
-    username = st.text_input("Masukkan username:")
-    password = st.text_input("Masukkan password:", type="password")
-
-    if st.button("🔓 Login"):
-        if username in USER_CREDENTIALS and USER_CREDENTIALS[username] == password:
-            st.session_state.logged_in = True
+if not st.session_state.login:
+    st.subheader("🔐 Login")
+    username = st.text_input("Username")
+    password = st.text_input("Password", type="password")
+    if st.button("Masuk"):
+        if username and password:
+            st.session_state.login = True
             st.session_state.username = username
-            st.success(f"Login sebagai *{username}*")
+            st.experimental_rerun()
         else:
-            st.error("Username atau password salah.")
+            st.warning("Mohon masukkan username dan password.")
+    st.stop()
 
-    st.stop()  # ⛔ Stop agar tidak render bagian bawah sebelum login
+username = st.session_state.username
+filename = f"{DATA_FOLDER}/data_{username}.csv"
 
-# --------------------------
-# 🧠 Setelah Login
-# --------------------------
-st.title(f"Selamat datang, {st.session_state.username} 👋")
+st.sidebar.success(f"Login sebagai: {username}")
+menu = st.sidebar.radio("Menu", [
+    "📥 Input Mood Harian", 
+    "📊 Grafik & Heatmap", 
+    "📂 Lihat Data", 
+    "📌 Statistik", 
+    "🚪 Logout"
+])
 
-# Data CSV per user
-data_file = f"data_{st.session_state.username}.csv"
+# ========== Input Mood Harian ==========
+if menu == "📥 Input Mood Harian":
+    st.subheader("📥 Input Mood dan Aktivitas Harian")
+    
+    tanggal = st.date_input("Tanggal", datetime.now().date())
+    aktivitas = st.text_input("Aktivitas hari ini")
+    mood = st.slider("Skor Mood (1=buruk, 5=baik)", 1, 5, 3)
 
-# Input aktivitas
-st.subheader("📋 Input Mood & Aktivitas")
-tanggal = st.date_input("Tanggal", datetime.now().date())
+    if st.button("💾 Simpan"):
+        new_row = pd.DataFrame([{
+            "Tanggal": tanggal,
+            "Aktivitas": aktivitas,
+            "Mood": mood
+        }])
+        if os.path.exists(filename):
+            df = pd.read_csv(filename)
+            df = pd.concat([df, new_row], ignore_index=True)
+        else:
+            df = new_row
+        df.to_csv(filename, index=False)
+        st.success("✅ Data berhasil disimpan!")
 
-aktivitas_akademik = st.selectbox("Aktivitas Akademik", ["-", "Belajar", "Tugas", "Tidak Ada"])
-aktivitas_sosial = st.selectbox("Aktivitas Sosial", ["-", "Ngobrol", "Main", "Sendirian"])
-aktivitas_kesehatan = st.selectbox("Aktivitas Kesehatan", ["-", "Olahraga", "Tidur cukup", "Makan sehat", "Tidak Sehat"])
-aktivitas_lainnya = st.selectbox("Aktivitas Lainnya", ["-", "Game", "Nonton", "Rebahan", "Scrolling", "Meditasi"])
-
-rating_mood = st.slider("Rating mood hari ini (1 = buruk, 5 = sangat baik)", 1, 5, 3)
-
-if st.button("✅ Simpan Data"):
-    new_data = {
-        "Tanggal": tanggal.strftime("%Y-%m-%d"),
-        "Akademik": aktivitas_akademik,
-        "Sosial": aktivitas_sosial,
-        "Kesehatan": aktivitas_kesehatan,
-        "Lainnya": aktivitas_lainnya,
-        "RatingMood": rating_mood
-    }
-
-    if os.path.exists(data_file):
-        df = pd.read_csv(data_file)
-        df = df[df["Tanggal"] != new_data["Tanggal"]]  # hindari duplikat tanggal
-        df = pd.concat([df, pd.DataFrame([new_data])], ignore_index=True)
+# ========== Grafik & Heatmap ==========
+elif menu == "📊 Grafik & Heatmap":
+    st.subheader("📈 Grafik & Heatmap Mood")
+    if not os.path.exists(filename):
+        st.info("Belum ada data untuk ditampilkan.")
     else:
-        df = pd.DataFrame([new_data])
+        df = pd.read_csv(filename)
+        df["Tanggal"] = pd.to_datetime(df["Tanggal"])
+        df = df.sort_values("Tanggal")
 
-    df.to_csv(data_file, index=False)
-    st.success("✅ Data berhasil disimpan!")
+        # Line Chart Mingguan
+        df["Week"] = df["Tanggal"].dt.isocalendar().week
+        weekly_mood = df.groupby("Week")["Mood"].mean()
+        st.line_chart(weekly_mood)
 
-# --------------------------
-# 📊 Lihat Data
-# --------------------------
-st.subheader("📈 Riwayat Mood Kamu")
-if os.path.exists(data_file):
-    df = pd.read_csv(data_file)
-    st.dataframe(df)
-    st.line_chart(df.set_index("Tanggal")["RatingMood"])
-else:
-    st.info("Belum ada data disimpan.")
+        # Heatmap
+        df["Weekday"] = df["Tanggal"].dt.weekday
+        weeks = sorted(df["Week"].unique())
+        heatmap_data = np.full((7, len(weeks)), np.nan)
+        week_map = {week: i for i, week in enumerate(weeks)}
+
+        for _, row in df.iterrows():
+            heatmap_data[int(row["Weekday"]), week_map[row["Week"]]] = row["Mood"]
+
+        fig, ax = plt.subplots(figsize=(10, 4))
+        cax = ax.imshow(heatmap_data, cmap="YlOrBr", aspect="auto", vmin=1, vmax=5)
+        ax.set_yticks(np.arange(7))
+        ax.set_yticklabels(["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"])
+        ax.set_xticks(np.arange(len(weeks)))
+        ax.set_xticklabels([f"Minggu {w}" for w in weeks])
+        for i in range(7):
+            for j in range(len(weeks)):
+                if not np.isnan(heatmap_data[i, j]):
+                    ax.text(j, i, int(heatmap_data[i, j]), ha="center", va="center", color="black")
+        plt.colorbar(cax, ax=ax, label="Mood")
+        st.pyplot(fig)
+
+# ========== Tampilkan Data ==========
+elif menu == "📂 Lihat Data":
+    st.subheader("📂 Data Tersimpan")
+    if not os.path.exists(filename):
+        st.warning("Belum ada data.")
+    else:
+        df = pd.read_csv(filename)
+        st.dataframe(df)
+        st.download_button("⬇️ Unduh CSV", data=df.to_csv(index=False), file_name=f"data_{username}.csv", mime="text/csv")
+
+# ========== Statistik ==========
+elif menu == "📌 Statistik":
+    st.subheader("📌 Statistik Singkat")
+    if not os.path.exists(filename):
+        st.warning("Belum ada data.")
+    else:
+        df = pd.read_csv(filename)
+        st.metric("Hari tercatat", df["Tanggal"].nunique())
+        st.metric("Mood rata-rata", round(df["Mood"].mean(), 2))
+        st.metric("Aktivitas unik", df["Aktivitas"].nunique())
+
+# ========== Logout ==========
+elif menu == "🚪 Logout":
+    st.session_state.clear()
+    st.success("Berhasil logout.")
+    st.experimental_rerun()
