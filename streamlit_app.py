@@ -47,40 +47,29 @@ menu = st.sidebar.radio("Menu", [
 ])
 
 # ========== Data Aktivitas ==========
-aktivitas_dict = {
-    "Mengerjakan tugas": "Akademik",
-    "Belajar": "Akademik",
-    "Membaca": "Akademik",
-    "Bersosialisasi": "Sosial",
-    "Bertemu teman": "Sosial",
-    "Diskusi kelompok": "Sosial",
-    "Menonton film": "Lainnya",
-    "Bermain game": "Lainnya",
-    "Tidur cukup": "Lainnya",
-    "Begadang": "Lainnya"
+aktivitas_kategori_dict = {
+    "Akademik": ["Mengerjakan tugas", "Belajar", "Membaca"],
+    "Sosial": ["Bersosialisasi", "Bertemu teman", "Diskusi kelompok"],
+    "Lainnya": ["Menonton film", "Bermain game", "Tidur cukup", "Begadang"]
 }
 
 aktivitas_positif = [
-    "Mengerjakan tugas", "Belajar", "Membaca", 
-    "Bersosialisasi", "Bertemu teman", "Diskusi kelompok", 
-    "Tidur cukup"
+    "Mengerjakan tugas", "Belajar", "Membaca", "Bersosialisasi",
+    "Bertemu teman", "Diskusi kelompok", "Tidur cukup"
 ]
+aktivitas_negatif = ["Begadang"]
 
-aktivitas_negatif = [
-    "Begadang", "Bermain game", "Menonton film"
-]
-
-# ========== Saran Berdasarkan Aktivitas ==========
-def get_saran(aktivitas):
+# ========== Saran berdasarkan kombinasi mood dan aktivitas ==========
+def get_saran(aktivitas, mood):
     saran_dict = {
         "Mengerjakan tugas": ["Lanjutkan konsistensimu!", "Bagus! Jangan lupa istirahat sejenak."],
         "Belajar": ["Coba variasikan metode belajar agar tidak bosan.", "Bagus! Belajar rutin membuahkan hasil."],
         "Membaca": ["Coba baca topik baru hari ini.", "Terus membaca, wawasanmu makin luas!"],
         "Bersosialisasi": ["Waktu bersama teman bisa menyegarkan pikiran.", "Pertahankan koneksi sosialmu!"],
         "Bertemu teman": ["Semoga pertemuannya menyenangkan!", "Teman adalah penguat semangat."],
-        "Diskusi kelompok": ["Diskusi menambah perspektif baru.", "Bisa jadi ajang bertukar ide produktif!"],
-        "Menonton film": ["Tonton hal yang menginspirasi!", "Film bisa bantu recharge energi."],
-        "Bermain game": ["Gaming boleh, asal tetap terkontrol.", "Ingat waktu ya! Jangan sampai lupa kewajiban."],
+        "Diskusi kelompok": ["Coba aktif berdiskusi ya!", "Pengalaman baru bisa kamu dapat dari sini."],
+        "Menonton film": ["Pastikan tetap seimbang dengan waktu produktif ya.", "Tonton hal yang menginspirasi!"],
+        "Bermain game": ["Ingat waktu ya! Jangan sampai lupa kewajiban.", "Gaming boleh, asal tetap terkontrol."],
         "Tidur cukup": ["Kualitas tidur yang baik bantu jaga mood.", "Pertahankan pola tidur sehatmu."],
         "Begadang": ["Coba atur waktu tidur agar lebih teratur.", "Terlalu sering begadang bisa menurunkan performa harian."]
     }
@@ -100,19 +89,18 @@ if menu == "📅 Input Mood Harian":
     tanggal = st.date_input("Tanggal", datetime.now().date())
     mood = st.slider("Skor Mood (1=buruk, 5=baik)", 1, 5, 3)
 
-    aktivitas_kategori = st.selectbox("Pilih kategori aktivitas", ["Akademik", "Sosial", "Lainnya"])
-    aktivitas_opsi = [a for a, k in aktivitas_dict.items() if k == aktivitas_kategori]
-    aktivitas_opsi = random.sample(aktivitas_opsi, min(3, len(aktivitas_opsi)))
+    kategori = st.selectbox("Pilih kategori aktivitas", list(aktivitas_kategori_dict.keys()))
+    opsi_aktivitas = random.sample(aktivitas_kategori_dict[kategori], k=min(3, len(aktivitas_kategori_dict[kategori])))
+    aktivitas = st.selectbox("Pilih aktivitas", opsi_aktivitas)
 
-    aktivitas = st.selectbox("Pilih aktivitas yang dilakukan", aktivitas_opsi)
-    saran = get_saran(aktivitas)
+    saran = get_saran(aktivitas, mood)
     evaluasi = penilaian_mood(mood, aktivitas)
 
     if st.button("📅 Simpan"):
         new_row = pd.DataFrame([{
             "Tanggal": tanggal,
             "Aktivitas": aktivitas,
-            "Kategori": aktivitas_kategori,
+            "Kategori": kategori,
             "Mood": mood,
             "Saran": saran,
             "Evaluasi": evaluasi
