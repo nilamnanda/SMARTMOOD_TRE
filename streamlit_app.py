@@ -1,134 +1,118 @@
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
 import random
-from datetime import date
+import datetime
+import os
 
-# ------------------------- DATASET AKTIVITAS ------------------------- #
-# Mapping aktivitas ke skor positif/negatif berdasarkan dataset Kaggle FitLife
-activity_scores = {
-    "Akademik": {
-        "Belajar efektif": 2,
-        "Mengerjakan tugas tepat waktu": 2,
-        "Tidak mengerjakan tugas": -2,
-        "Menunda belajar": -1,
-        "Istirahat dari belajar": 1
-    },
-    "Sosial": {
-        "Bertemu teman": 2,
-        "Sendirian sepanjang hari": -1,
-        "Bertengkar dengan teman": -2,
-        "Membantu orang lain": 2,
-        "Diskusi dengan keluarga": 1
-    },
-    "Fisik": {
-        "Olahraga": 2,
-        "Jalan kaki santai": 1,
-        "Tidur siang": 0,
-        "Begadang": -2,
-        "Tidak berolahraga": -1
-    },
-    "Lainnya": {
-        "Main game santai": 1,
-        "Overthinking": -2,
-        "Meditasi": 2,
-        "Menonton film favorit": 1,
-        "Scrolling medsos berlebihan": -1
-    }
+# Inisialisasi CSV jika belum ada
+csv_file = 'mood_log.csv'
+if not os.path.exists(csv_file):
+    df_init = pd.DataFrame(columns=['Tanggal', 'Aktivitas', 'Skor Mood', 'Total Skor'])
+    df_init.to_csv(csv_file, index=False)
+
+# Fungsi klasifikasi dan saran berbasis mood
+motivational_quotes = [
+    "Setiap hari adalah awal yang baru.",
+    "Hujan akan berhenti. Tetap semangat.",
+    "Kamu sudah bertahan sejauh ini. Lanjutkan.",
+    "Waktu sulit akan berlalu.",
+    "Kamu tidak sendiri."
+]
+
+saran_berdasarkan_mood = {
+    1: [
+        "Coba bersih-bersih kamar untuk suasana baru.",
+        "Jalan santai 10 menit bisa bantu meredakan stres.",
+        "Tulis jurnal atau luapkan isi hati di catatan."
+    ],
+    2: [
+        "Beri waktu untuk diri sendiri dan istirahat sejenak.",
+        "Dengarkan lagu yang menenangkan.",
+        "Hubungi teman terdekat dan curhat ringan."
+    ],
+    3: [
+        "Mood kamu sedang cukup stabil, tapi bisa lebih baik.",
+        "Coba lakukan aktivitas yang menyenangkan seperti nonton atau jalan santai.",
+        "Main game ringan atau buat playlist favorit."
+    ],
+    4: [
+        "Kamu sedang cukup bahagia, teruskan aktivitas positif.",
+        "Bantu orang lain hari ini, itu bisa memperkuat rasa bahagia.",
+        "Coba eksplorasi tempat baru atau masakan baru."
+    ],
+    5: [
+        "Mood kamu sangat baik! Bagikan energi positif ke sekitar.",
+        "Pertahankan dengan olahraga ringan atau meditasi.",
+        "Ambil tantangan kecil yang menyenangkan hari ini."
+    ]
 }
 
-# ------------------------- FUNGSI DIAGNOSIS & SARAN ------------------------- #
-def diagnose_and_suggest(mood_score, total_activity_score):
-    diagnosis = ""
-    suggestion = ""
+def diagnosis_mood(skor):
+    if skor <= 2:
+        return "Mood kamu sedang rendah, jaga diri dan ambil waktu istirahat."
+    elif skor == 3:
+        return "Mood kamu sedang cukup stabil, tapi bisa lebih baik."
+    elif skor >= 4:
+        return "Mood kamu tergolong baik, pertahankan!"
 
-    if mood_score >= 4 and total_activity_score >= 4:
-        diagnosis = "Kamu sedang dalam kondisi sangat baik!"
-        suggestion = random.choice([
-            "Pertahankan aktivitas positif seperti ini!",
-            "Coba eksplorasi hobi baru hari ini.",
-            "Luangkan waktu untuk berbagi kebahagiaan dengan orang terdekat."
-        ])
-    elif 3 <= mood_score < 4 or 1 <= total_activity_score <= 3:
-        diagnosis = "Mood kamu sedang cukup stabil, tapi bisa lebih baik."
-        suggestion = random.choice([
-            "Coba lakukan aktivitas yang menyenangkan seperti nonton atau jalan santai.",
-            "Luangkan waktu istirahat jika merasa lelah.",
-            "Jangan lupa tetap aktif secara sosial, walau hanya sekadar ngobrol ringan."
-        ])
-    else:
-        diagnosis = "Sepertinya kamu sedang kurang baik hari ini."
-        suggestion = random.choice([
-            "Cobalah istirahat yang cukup dan kurangi aktivitas yang membebani.",
-            "Pertimbangkan untuk berbicara dengan teman atau menulis jurnal harian.",
-            "Lakukan aktivitas sederhana seperti mendengarkan musik atau meditasi ringan."
-        ])
+def tampilkan_saran(skor):
+    saran = random.choice(saran_berdasarkan_mood[skor])
+    kutipan = random.choice(motivational_quotes)
+    return f"{saran}\n\nMotivasi: {kutipan}"
 
-    return diagnosis, suggestion
+# Fungsi untuk menghitung total skor berdasarkan aktivitas
+aktivitas_positif = ['Olahraga', 'Meditasi', 'Bertemu teman', 'Membaca', 'Berjalan santai']
+aktivitas_negatif = ['Begadang', 'Marah-marah', 'Malas gerak', 'Terlalu banyak scroll medsos']
 
-# ------------------------- UI STREAMLIT ------------------------- #
-st.set_page_config(page_title="SmartMood Tracker", layout="wide", page_icon="🧠")
-st.title("🧠 SmartMood Tracker")
-st.markdown("Aplikasi pelacak mood harian berdasarkan aktivitasmu. Data dan analisis terinspirasi dari dataset **FitLife Kaggle**.")
+def nilai_aktivitas(aktivitas):
+    if aktivitas in aktivitas_positif:
+        return 1
+    elif aktivitas in aktivitas_negatif:
+        return -1
+    return 0
 
-menu = st.sidebar.selectbox("📋 Pilih menu", ["Input Mood Harian", "Lihat Riwayat & Grafik"])
+# Sidebar menu
+menu = st.sidebar.selectbox("\U0001F4D3 Pilih menu", ["Input Mood Harian", "Lihat Riwayat & Grafik"])
 
-if "mood_data" not in st.session_state:
-    st.session_state.mood_data = pd.DataFrame(columns=["Tanggal", "Mood", "Skor Aktivitas", "Diagnosis", "Saran"])
-
-# ------------------------- INPUT MOOD ------------------------- #
 if menu == "Input Mood Harian":
-    st.header("📝 Input Mood & Aktivitas")
+    st.title("Catatan Mood Harian")
 
-    tanggal = st.date_input("Tanggal", date.today())
-
-    activity_score = 0
-    activity_log = []
-
-    for kategori, pilihan in activity_scores.items():
-        opsi = st.selectbox(f"{kategori}", options=["(Pilih satu)"] + list(pilihan.keys()))
-        if opsi != "(Pilih satu)":
-            score = activity_scores[kategori][opsi]
-            activity_score += score
-            activity_log.append(f"{kategori}: {opsi} ({score})")
-
-    mood = st.slider("Rating mood hari ini (1-5)", 1, 5, 3)
+    aktivitas = st.selectbox("Aktivitas hari ini", aktivitas_positif + aktivitas_negatif + ['Lainnya'])
+    skor_mood = st.slider("Rating mood hari ini (1–5)", 1, 5, 3)
 
     if st.button("Simpan"):
-        diagnosis, saran = diagnose_and_suggest(mood, activity_score)
-        new_data = {
-            "Tanggal": tanggal,
-            "Mood": mood,
-            "Skor Aktivitas": activity_score,
-            "Diagnosis": diagnosis,
-            "Saran": saran
-        }
-        st.session_state.mood_data = pd.concat([st.session_state.mood_data, pd.DataFrame([new_data])], ignore_index=True)
+        skor_aktivitas = nilai_aktivitas(aktivitas)
+        total_skor = skor_mood + skor_aktivitas
+
+        tanggal = datetime.date.today().strftime('%Y-%m-%d')
+
+        new_row = pd.DataFrame({
+            'Tanggal': [tanggal],
+            'Aktivitas': [aktivitas],
+            'Skor Mood': [skor_mood],
+            'Total Skor': [total_skor]
+        })
+
+        df = pd.read_csv(csv_file)
+        df = pd.concat([df, new_row], ignore_index=True)
+        df.to_csv(csv_file, index=False)
+
         st.success("Data berhasil disimpan!")
-        st.markdown(f"**Diagnosis:** {diagnosis}")
-        st.markdown(f"**Saran:** {saran}")
+
+        st.markdown(f"**Diagnosis:** {diagnosis_mood(skor_mood)}")
+        st.markdown(f"**Saran:** {tampilkan_saran(skor_mood)}")
         st.markdown("**Rincian Aktivitas:**")
-        for a in activity_log:
-            st.markdown(f"- {a}")
+        st.write(f"Aktivitas: {aktivitas}, Skor Aktivitas: {skor_aktivitas}, Total Skor: {total_skor}")
 
-# ------------------------- VISUALISASI ------------------------- #
-elif menu == "Lihat Riwayat & Grafik":
-    st.header("📊 Riwayat & Visualisasi Mood")
+if menu == "Lihat Riwayat & Grafik":
+    st.title("Riwayat dan Grafik Mood")
 
-    if st.session_state.mood_data.empty:
-        st.info("Belum ada data mood yang dimasukkan.")
+    if os.path.exists(csv_file):
+        df = pd.read_csv(csv_file)
+        st.dataframe(df.tail(10))
+
+        st.line_chart(df[['Skor Mood', 'Total Skor']])
+        st.bar_chart(df['Skor Mood'])
+        st.markdown("Grafik mood harian berdasarkan input pengguna dan aktivitas terkait.")
     else:
-        df = st.session_state.mood_data.sort_values("Tanggal")
-        st.dataframe(df, use_container_width=True)
-
-        # Grafik mood harian
-        fig, ax = plt.subplots()
-        ax.plot(df["Tanggal"], df["Mood"], marker='o', color='skyblue')
-        ax.set_title("Tren Mood Harian")
-        ax.set_ylabel("Mood (1-5)")
-        ax.set_xlabel("Tanggal")
-        ax.grid(True)
-        st.pyplot(fig)
-
-        st.caption("Mood dinilai berdasarkan aktivitas harian (positif/negatif) dan input pengguna, divalidasi dari dataset FitLife Kaggle.")
-
+        st.warning("Belum ada data tersimpan.")
