@@ -50,13 +50,24 @@ menu = st.sidebar.radio("Menu", [
 if menu == "📅 Input Mood Harian":
     st.subheader("📅 Input Mood dan Aktivitas Harian")
     tanggal = st.date_input("Tanggal", datetime.now().date())
-    aktivitas = st.text_input("Aktivitas hari ini")
     mood = st.slider("Skor Mood (1=buruk, 5=baik)", 1, 5, 3)
+
+    aktivitas_kategori = st.selectbox("Pilih kategori aktivitas", ["Akademik", "Produktif", "Santai"])
+
+    if aktivitas_kategori == "Akademik":
+        aktivitas_opsi = ["Mengerjakan tugas", "Membaca buku", "Belajar kelompok"]
+    elif aktivitas_kategori == "Produktif":
+        aktivitas_opsi = ["Membersihkan rumah", "Belanja kebutuhan", "Bekerja"]
+    else:
+        aktivitas_opsi = ["Menonton film", "Tidur siang", "Main game"]
+
+    aktivitas = st.selectbox("Pilih aktivitas yang dilakukan", aktivitas_opsi)
 
     if st.button("📅 Simpan"):
         new_row = pd.DataFrame([{
             "Tanggal": tanggal,
             "Aktivitas": aktivitas,
+            "Kategori": aktivitas_kategori,
             "Mood": mood
         }])
         if os.path.exists(filename):
