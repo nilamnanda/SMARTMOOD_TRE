@@ -46,66 +46,69 @@ menu = st.sidebar.radio("Menu", [
     "🚪 Logout"
 ])
 
-# ========== Data & Saran ==========
-aktivitas_positif = ["olahraga", "belajar", "membaca", "meditasi", "bertemu teman", "kerja"]
-aktivitas_negatif = ["berdebat", "tidak produktif", "malas", "tidak ngapa-ngapain", "marah"]
-aktivitas_opsi = aktivitas_positif + aktivitas_negatif + ["istirahat", "menonton", "jalan-jalan", "mendengarkan musik", "masak"]
-
-saran_dict = {
-    "Sedih": [
-        "Coba lakukan aktivitas yang kamu sukai",
-        "Luangkan waktu untuk dirimu sendiri",
-        "Berbicaralah dengan teman dekat atau keluarga",
-        "Jangan lupa tidur cukup dan makan yang bergizi"
-    ],
-    "Netral": [
-        "Coba lakukan sesuatu yang menyenangkan hari ini",
-        "Mungkin waktu yang tepat untuk eksplor hobi baru",
-        "Luangkan waktu singkat untuk refleksi diri"
-    ],
-    "Cukup Senang": [
-        "Pertahankan semangatmu!",
-        "Nikmati hari dengan produktivitas seimbang",
-        "Berbagi kebaikan bisa meningkatkan suasana hati"
-    ],
-    "Bahagia": [
-        "Tetap pertahankan semangatmu hari ini!",
-        "Bagikan kebahagiaanmu ke orang lain!",
-        "Cari cara baru untuk bersyukur hari ini!",
-        "Jaga kesehatan fisik dan mentalmu!",
-        "Gunakan energi positif ini untuk menyelesaikan tugas penting!",
-        "Tantang dirimu dengan sesuatu yang baru dan menyenangkan!",
-        "Ajak orang terdekat untuk merayakan momen baikmu!"
-    ]
+# ========== Kategori dan Aktivitas ==========
+kategori_aktivitas = {
+    "Akademik": ["mengerjakan tugas", "belajar kelompok", "ikut kelas online"],
+    "Hiburan": ["menonton film", "main game", "jalan-jalan"],
+    "Kesehatan": ["olahraga", "meditasi", "makan sehat"],
+    "Negatif": ["berdebat", "tidak produktif", "marah"]
 }
 
-# ========== Fungsi ==========
-def klasifikasi_mood(mood):
+saran_bahagia = [
+    "Tetap pertahankan semangatmu hari ini!",
+    "Bagikan kebahagiaanmu ke orang lain!",
+    "Cari cara baru untuk bersyukur hari ini!",
+    "Gunakan energi positif ini untuk menyelesaikan tugas penting!",
+    "Tantang dirimu dengan sesuatu yang baru dan menyenangkan!",
+    "Ajak orang terdekat untuk merayakan momen baikmu!"
+]
+
+# ========== Fungsi Penilaian ==========
+def klasifikasi_mood(mood, aktivitas):
+    aktivitas_lower = aktivitas.lower()
+    negatif = [k for k in kategori_aktivitas["Negatif"] if k in aktivitas_lower]
+    positif = [k for k in kategori_aktivitas["Kesehatan"] + kategori_aktivitas["Akademik"] if k in aktivitas_lower]
+
+    if negatif and mood >= 4:
+        return "Campur Aduk"
+    if negatif:
+        return "Sedih"
+    if positif and mood >= 4:
+        return "Bahagia"
     if mood <= 2:
         return "Sedih"
     elif mood == 3:
         return "Netral"
-    elif mood == 4:
-        return "Cukup Senang"
-    return "Bahagia"
+    return "Cukup Senang"
 
 def saran_mood(klasifikasi):
-    return random.choice(saran_dict.get(klasifikasi, ["Jaga semangatmu hari ini!"]))
+    if klasifikasi == "Bahagia":
+        return random.choice(saran_bahagia)
+    elif klasifikasi == "Sedih":
+        return "Coba lakukan aktivitas yang kamu sukai atau berbicara dengan teman."
+    elif klasifikasi == "Campur Aduk":
+        return "Moodmu terlihat tinggi, tapi aktivitasmu tidak sehat. Perlu introspeksi."
+    elif klasifikasi == "Netral":
+        return "Hari yang biasa saja. Coba lakukan sesuatu yang menyenangkan."
+    return "Terus jaga keseimbangan harimu."
 
 # ========== Input Mood Harian ==========
 if menu == "📅 Input Mood Harian":
     st.subheader("📅 Input Mood dan Aktivitas Harian")
     tanggal = st.date_input("Tanggal", datetime.now().date())
-    aktivitas = st.selectbox("Pilih aktivitas hari ini", sorted(aktivitas_opsi))
     mood = st.slider("Skor Mood (1=buruk, 5=baik)", 1, 5, 3)
 
+    kategori = st.selectbox("Pilih kategori aktivitas", list(kategori_aktivitas.keys()))
+    aktivitas = st.selectbox("Pilih aktivitas", kategori_aktivitas[kategori])
+
     if st.button("📅 Simpan"):
-        klasifikasi = klasifikasi_mood(mood)
+        klasifikasi = klasifikasi_mood(mood, aktivitas)
         saran = saran_mood(klasifikasi)
         new_row = pd.DataFrame([{
             "Tanggal": tanggal,
-            "Aktivitas": aktivitas,
             "Mood": mood,
+            "Kategori": kategori,
+            "Aktivitas": aktivitas,
             "Klasifikasi": klasifikasi,
             "Saran": saran
         }])
@@ -115,7 +118,7 @@ if menu == "📅 Input Mood Harian":
         else:
             df = new_row
         df.to_csv(filename, index=False)
-        st.success(f"✅ Data berhasil disimpan! Mood kamu diklasifikasikan sebagai: {klasifikasi}")
+        st.success(f"✅ Mood kamu: {klasifikasi}")
         st.info(f"💡 Saran: {saran}")
 
 # ========== Grafik & Heatmap ==========
@@ -179,7 +182,7 @@ elif menu == "ℹ️ Tentang Aplikasi":
     st.subheader("ℹ️ Info Aplikasi")
     st.markdown("""
     **SmartMood Tracker** adalah aplikasi pelacak suasana hati harian.
-    - Input mood dan aktivitas
+    - Input mood dan aktivitas berdasarkan kategori
     - Dapatkan saran dan kutipan
     - Lihat grafik dan heatmap
     - Unduh dan reset data
