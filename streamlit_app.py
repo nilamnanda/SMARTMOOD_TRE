@@ -3,19 +3,17 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import os
-import random
 from datetime import datetime
+import random
 
-
-# Konfigurasi awal HARUS di baris pertama
+# ========== Konfigurasi Awal ==========
 st.set_page_config(page_title="SmartMood Tracker", layout="wide")
+st.title("🧠 SmartMood Tracker")
 
-# ========== Inisialisasi ==========
-st.title("\U0001F9E0 SmartMood Tracker - Versi Multi User")
 DATA_FOLDER = "user_data"
 os.makedirs(DATA_FOLDER, exist_ok=True)
 
-# ========== Login ==========
+# ========== Login Simulasi ==========
 if "login" not in st.session_state:
     st.session_state.login = False
 if "username" not in st.session_state:
@@ -29,75 +27,79 @@ if not st.session_state.login:
         if username and password:
             st.session_state.login = True
             st.session_state.username = username
-            st.experimental_rerun()
+            st.rerun()
         else:
-            st.warning("Masukkan nama pengguna dulu untuk memulai.")
+            st.warning("Mohon masukkan username dan password.")
     st.stop()
 
 username = st.session_state.username
 filename = f"{DATA_FOLDER}/data_{username}.csv"
 
-# ========== Sidebar ==========
 st.sidebar.success(f"Login sebagai: {username}")
 menu = st.sidebar.radio("Menu", [
-    "📥 Input Mood Harian", "📊 Grafik & Heatmap", "📂 Lihat Data", "📌 Statistik", "❓ Tentang", "🧹 Reset Data", "🚪 Logout"
+    "📥 Input Mood Harian", 
+    "📊 Grafik & Heatmap", 
+    "📂 Lihat Data", 
+    "📌 Statistik", 
+    "ℹ️ Tentang Aplikasi", 
+    "🧹 Reset Data", 
+    "🚪 Logout"
 ])
 
 # ========== Fungsi Tambahan ==========
-def classify_mood(score, aktivitas):
-    negatif = ["marah", "berdebat", "menangis", "murung", "berantem", "nangis", "frustrasi", "stress"]
-    positif = ["olahraga", "bermain", "bercengkerama", "membaca", "menulis", "belajar", "beribadah", "meditasi", "jalan"]
-    lower_akt = aktivitas.lower()
-    if any(neg in lower_akt for neg in negatif) and score >= 4:
-        return "Campur Aduk"
-    elif score >= 4:
-        return "Bahagia"
-    elif score == 3:
-        return "Netral"
-    else:
+aktivitas_negatif = ["berdebat", "tidak produktif", "malas", "tidak ngapa-ngapain", "marah"]
+aktivitas_positif = ["olahraga", "belajar", "membaca", "meditasi", "bertemu teman", "kerja"]
+saran_bahagia = [
+    "Tetap pertahankan semangatmu hari ini!",
+    "Bagikan kebahagiaanmu ke orang lain!",
+    "Cari cara baru untuk bersyukur hari ini!",
+    "Jaga kesehatan fisik dan mentalmu!",
+    "Gunakan energi positif ini untuk menyelesaikan tugas penting!"
+]
+
+def klasifikasi_mood(mood, aktivitas):
+    aktivitas_lower = aktivitas.lower()
+    if any(neg in aktivitas_lower for neg in aktivitas_negatif):
+        if mood >= 4:
+            return "Campur Aduk"
+        elif mood <= 2:
+            return "Sedih"
+    if any(pos in aktivitas_lower for pos in aktivitas_positif):
+        if mood >= 4:
+            return "Bahagia"
+    if mood <= 2:
         return "Sedih"
+    elif mood == 3:
+        return "Netral"
+    return "Cukup Senang"
 
-def get_motivasi(mood):
-    opsi = {
-        "Bahagia": [
-            "Teruskan kebiasaan baikmu hari ini!",
-            "Bagikan kebahagiaanmu ke orang lain!",
-            "Kamu luar biasa, tetap semangat!"
-        ],
-        "Sedih": [
-            "Tidak apa-apa untuk merasa sedih, kamu tidak sendiri.",
-            "Ambil napas dalam-dalam dan mulai perlahan.",
-            "Keesokan hari selalu punya peluang baru."
-        ],
-        "Netral": [
-            "Hari yang stabil, pertahankan keseimbanganmu.",
-            "Cobalah aktivitas menyenangkan setelah ini!",
-            "Sedikit perubahan bisa membuat harimu lebih baik."
-        ],
-        "Campur Aduk": [
-            "Luangkan waktu untuk refleksi diri.",
-            "Tidak semua hal harus sempurna, cukup jalani.",
-            "Kenali emosi, lalu kendalikan dengan baik."
-        ]
-    }
-    return random.choice(opsi[mood])
+def saran_mood(klasifikasi):
+    if klasifikasi == "Bahagia":
+        return random.choice(saran_bahagia)
+    elif klasifikasi == "Sedih":
+        return "Coba lakukan aktivitas yang kamu sukai atau berbicara dengan teman."
+    elif klasifikasi == "Campur Aduk":
+        return "Mungkin kamu merasa bingung hari ini. Luangkan waktu untuk refleksi."
+    elif klasifikasi == "Netral":
+        return "Hari yang biasa saja. Coba lakukan sesuatu yang menyenangkan."
+    return "Terus jaga keseimbangan harimu."
 
-# ========== Menu: Input Mood ==========
+# ========== Input Mood Harian ==========
 if menu == "📥 Input Mood Harian":
     st.subheader("📥 Input Mood dan Aktivitas Harian")
     tanggal = st.date_input("Tanggal", datetime.now().date())
     aktivitas = st.text_input("Aktivitas hari ini")
-    mood = st.slider("Skor Mood (1 = buruk, 5 = sangat baik)", 1, 5, 3)
+    mood = st.slider("Skor Mood (1=buruk, 5=baik)", 1, 5, 3)
 
     if st.button("💾 Simpan"):
-        mood_kategori = classify_mood(mood, aktivitas)
-        motivasi = get_motivasi(mood_kategori)
+        klasifikasi = klasifikasi_mood(mood, aktivitas)
+        saran = saran_mood(klasifikasi)
         new_row = pd.DataFrame([{
             "Tanggal": tanggal,
             "Aktivitas": aktivitas,
             "Mood": mood,
-            "Kategori": mood_kategori,
-            "Saran": motivasi
+            "Klasifikasi": klasifikasi,
+            "Saran": saran
         }])
         if os.path.exists(filename):
             df = pd.read_csv(filename)
@@ -105,84 +107,85 @@ if menu == "📥 Input Mood Harian":
         else:
             df = new_row
         df.to_csv(filename, index=False)
-        st.success(f"✅ Data disimpan sebagai mood '{mood_kategori}'")
-        st.info(motivasi)
+        st.success(f"✅ Data berhasil disimpan! Mood kamu diklasifikasikan sebagai: {klasifikasi}")
+        st.info(f"💡 Saran: {saran}")
 
-# ========== Menu: Grafik & Heatmap ==========
+# ========== Grafik & Heatmap ==========
 elif menu == "📊 Grafik & Heatmap":
-    st.subheader("📈 Grafik Mood Mingguan & Heatmap")
-    if os.path.exists(filename):
+    st.subheader("📈 Grafik & Heatmap Mood")
+    if not os.path.exists(filename):
+        st.info("Belum ada data untuk ditampilkan.")
+    else:
         df = pd.read_csv(filename)
         df["Tanggal"] = pd.to_datetime(df["Tanggal"])
-        df["Week"] = df["Tanggal"].dt.isocalendar().week
-        df["Weekday"] = df["Tanggal"].dt.weekday
+        df = df.sort_values("Tanggal")
 
+        df["Week"] = df["Tanggal"].dt.isocalendar().week
         weekly_mood = df.groupby("Week")["Mood"].mean()
         st.line_chart(weekly_mood)
 
+        df["Weekday"] = df["Tanggal"].dt.weekday
         weeks = sorted(df["Week"].unique())
         heatmap_data = np.full((7, len(weeks)), np.nan)
-        week_map = {w: i for i, w in enumerate(weeks)}
+        week_map = {week: i for i, week in enumerate(weeks)}
 
         for _, row in df.iterrows():
-            heatmap_data[row["Weekday"], week_map[row["Week"]]] = row["Mood"]
+            heatmap_data[int(row["Weekday"]), week_map[row["Week"]]] = row["Mood"]
 
         fig, ax = plt.subplots(figsize=(10, 4))
-        cax = ax.imshow(heatmap_data, cmap="YlGn", aspect="auto", vmin=1, vmax=5)
-        ax.set_yticks(range(7))
+        cax = ax.imshow(heatmap_data, cmap="YlOrBr", aspect="auto", vmin=1, vmax=5)
+        ax.set_yticks(np.arange(7))
         ax.set_yticklabels(["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"])
-        ax.set_xticks(range(len(weeks)))
+        ax.set_xticks(np.arange(len(weeks)))
         ax.set_xticklabels([f"Minggu {w}" for w in weeks])
         for i in range(7):
             for j in range(len(weeks)):
                 if not np.isnan(heatmap_data[i, j]):
-                    ax.text(j, i, int(heatmap_data[i, j]), ha="center", va="center")
-        plt.colorbar(cax, ax=ax, label="Skor Mood")
+                    ax.text(j, i, int(heatmap_data[i, j]), ha="center", va="center", color="black")
+        plt.colorbar(cax, ax=ax, label="Mood")
         st.pyplot(fig)
-    else:
-        st.warning("Belum ada data untuk ditampilkan.")
 
-# ========== Menu: Lihat Data ==========
+# ========== Tampilkan Data ==========
 elif menu == "📂 Lihat Data":
-    st.subheader("📂 Data Mood Harian")
-    if os.path.exists(filename):
+    st.subheader("📂 Data Tersimpan")
+    if not os.path.exists(filename):
+        st.warning("Belum ada data.")
+    else:
         df = pd.read_csv(filename)
         st.dataframe(df)
-        st.download_button("⬇️ Unduh CSV", df.to_csv(index=False), file_name=f"data_{username}.csv")
-    else:
-        st.warning("Belum ada data.")
+        st.download_button("⬇️ Unduh CSV", data=df.to_csv(index=False), file_name=f"data_{username}.csv", mime="text/csv")
 
-# ========== Menu: Statistik ==========
+# ========== Statistik ==========
 elif menu == "📌 Statistik":
-    st.subheader("📌 Statistik Penggunaan")
-    if os.path.exists(filename):
-        df = pd.read_csv(filename)
-        st.metric("Total Hari Dicatat", df["Tanggal"].nunique())
-        st.metric("Mood Rata-rata", round(df["Mood"].mean(), 2))
-        st.metric("Aktivitas Unik", df["Aktivitas"].nunique())
+    st.subheader("📌 Statistik Singkat")
+    if not os.path.exists(filename):
+        st.warning("Belum ada data.")
     else:
-        st.info("Belum ada data.")
+        df = pd.read_csv(filename)
+        st.metric("Hari tercatat", df["Tanggal"].nunique())
+        st.metric("Mood rata-rata", round(df["Mood"].mean(), 2))
+        st.metric("Aktivitas unik", df["Aktivitas"].nunique())
 
-# ========== Menu: Tentang ==========
-elif menu == "❓ Tentang":
-    st.subheader("ℹ️ Tentang Aplikasi")
+# ========== Tentang ==========
+elif menu == "ℹ️ Tentang Aplikasi":
+    st.subheader("ℹ️ Info Aplikasi")
     st.markdown("""
-    **SmartMood Tracker** membantu kamu mencatat mood dan aktivitas harian,
-    memberikan saran berdasarkan pola aktivitas dan skor mood, serta menyajikan visualisasi untuk refleksi harian.
+    **SmartMood Tracker** adalah aplikasi pelacak suasana hati harian.
+    - Input mood dan aktivitas
+    - Dapatkan saran dan kutipan
+    - Lihat grafik dan heatmap
+    - Unduh dan reset data
     """)
 
-# ========== Menu: Reset Data ==========
+# ========== Reset Data ==========
 elif menu == "🧹 Reset Data":
-    st.subheader("⚠️ Reset Seluruh Data")
-    if st.button("🧹 Hapus Semua Data"):
+    if st.button("🗑️ Hapus semua data?"):
         if os.path.exists(filename):
             os.remove(filename)
-            st.success("✅ Semua data berhasil dihapus.")
-        else:
-            st.info("Tidak ada data untuk dihapus.")
+            st.success("Data berhasil dihapus!")
 
-# ========== Menu: Logout ==========
+# ========== Logout ==========
 elif menu == "🚪 Logout":
     st.session_state.clear()
     st.success("Berhasil logout.")
-    st.experimental_rerun()
+    st.rerun()
