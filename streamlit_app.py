@@ -46,29 +46,47 @@ menu = st.sidebar.radio("Menu", [
     "🚪 Logout"
 ])
 
+# ========== Saran berdasarkan kombinasi mood dan aktivitas ==========
+def get_saran(aktivitas, mood):
+    saran_dict = {
+        "Mengerjakan tugas": ["Lanjutkan konsistensimu!", "Bagus! Jangan lupa istirahat sejenak."],
+        "Belajar": ["Coba variasikan metode belajar agar tidak bosan.", "Bagus! Belajar rutin membuahkan hasil."],
+        "Membaca": ["Coba baca topik baru hari ini.", "Terus membaca, wawasanmu makin luas!"],
+        "Bersosialisasi": ["Waktu bersama teman bisa menyegarkan pikiran.", "Pertahankan koneksi sosialmu!"],
+        "Bertemu teman": ["Semoga pertemuannya menyenangkan!", "Teman adalah penguat semangat."],
+        "Bergabung dalam komunitas": ["Coba aktif berdiskusi ya!", "Pengalaman baru bisa kamu dapat dari sini."],
+        "Menonton": ["Pastikan tetap seimbang dengan waktu produktif ya.", "Tonton hal yang menginspirasi!"] ,
+        "Bermain game": ["Ingat waktu ya! Jangan sampai lupa kewajiban.", "Gaming boleh, asal tetap terkontrol."],
+        "Tidur cukup": ["Kualitas tidur yang baik bantu jaga mood.", "Pertahankan pola tidur sehatmu."],
+        "Begadang": ["Coba atur waktu tidur agar lebih teratur.", "Terlalu sering begadang bisa menurunkan performa harian."]
+    }
+    return random.choice(saran_dict.get(aktivitas, ["Lanjutkan aktivitas positifmu!"]))
+
 # ========== Input Mood Harian ==========
 if menu == "📅 Input Mood Harian":
     st.subheader("📅 Input Mood dan Aktivitas Harian")
     tanggal = st.date_input("Tanggal", datetime.now().date())
     mood = st.slider("Skor Mood (1=buruk, 5=baik)", 1, 5, 3)
 
-    aktivitas_kategori = st.selectbox("Pilih kategori aktivitas", ["Akademik", "Produktif", "Santai"])
+    aktivitas_kategori = st.selectbox("Pilih kategori aktivitas", ["Akademik", "Sosial", "Lainnya"])
 
     if aktivitas_kategori == "Akademik":
-        aktivitas_opsi = ["Mengerjakan tugas", "Membaca buku", "Belajar kelompok"]
-    elif aktivitas_kategori == "Produktif":
-        aktivitas_opsi = ["Membersihkan rumah", "Belanja kebutuhan", "Bekerja"]
+        aktivitas_opsi = ["Mengerjakan tugas", "Belajar", "Membaca"]
+    elif aktivitas_kategori == "Sosial":
+        aktivitas_opsi = ["Bersosialisasi", "Bertemu teman", "Bergabung dalam komunitas"]
     else:
-        aktivitas_opsi = ["Menonton film", "Tidur siang", "Main game"]
+        aktivitas_opsi = ["Menonton", "Bermain game", "Tidur cukup", "Begadang"]
 
     aktivitas = st.selectbox("Pilih aktivitas yang dilakukan", aktivitas_opsi)
+    saran = get_saran(aktivitas, mood)
 
     if st.button("📅 Simpan"):
         new_row = pd.DataFrame([{
             "Tanggal": tanggal,
             "Aktivitas": aktivitas,
             "Kategori": aktivitas_kategori,
-            "Mood": mood
+            "Mood": mood,
+            "Saran": saran
         }])
         if os.path.exists(filename):
             df = pd.read_csv(filename)
@@ -77,6 +95,7 @@ if menu == "📅 Input Mood Harian":
             df = new_row
         df.to_csv(filename, index=False)
         st.success("✅ Data berhasil disimpan!")
+        st.info(f"💡 Saran: {saran}")
 
 # ========== Grafik & Heatmap ==========
 elif menu == "📊 Grafik & Heatmap":
@@ -88,12 +107,10 @@ elif menu == "📊 Grafik & Heatmap":
         df["Tanggal"] = pd.to_datetime(df["Tanggal"])
         df = df.sort_values("Tanggal")
 
-        # Line Chart Mingguan
         df["Week"] = df["Tanggal"].dt.isocalendar().week
         weekly_mood = df.groupby("Week")["Mood"].mean()
         st.line_chart(weekly_mood)
 
-        # Heatmap
         df["Weekday"] = df["Tanggal"].dt.weekday
         weeks = sorted(df["Week"].unique())
         heatmap_data = np.full((7, len(weeks)), np.nan)
