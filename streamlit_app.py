@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 
 # ===== Konfigurasi =====
 st.set_page_config(page_title="SmartMood Tracker", layout="wide")
+st.title("🧠 SmartMood Tracker")
 DATA_FOLDER = "user_data"
 os.makedirs(DATA_FOLDER, exist_ok=True)
 
