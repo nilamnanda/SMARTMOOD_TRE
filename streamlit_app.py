@@ -4,15 +4,23 @@ import datetime
 import os
 import random
 
-# ====================== Inisialisasi =======================
+# ====================== Konfigurasi Halaman =======================
 st.set_page_config(page_title="SmartMood Tracker", layout="wide")
 
+# ====================== Inisialisasi Session =======================
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
 if 'username' not in st.session_state:
     st.session_state.username = ""
 
 DATA_FILE = "smartmood_data.csv"
+
+# ====================== User Login Data (Dummy) =======================
+USERS = {
+    "user1": "password123",
+    "user2": "rahasiaku",
+    "admin": "adminpass"
+}
 
 # ====================== Kategori & Aktivitas =======================
 aktivitas_kategori = {
@@ -34,7 +42,6 @@ aktivitas_kategori = {
     }
 }
 
-
 # ====================== Fungsi =======================
 def simpan_data(tanggal, username, mood, aktivitas, catatan):
     new_data = pd.DataFrame([{
@@ -52,8 +59,8 @@ def simpan_data(tanggal, username, mood, aktivitas, catatan):
     df.to_csv(DATA_FILE, index=False)
 
 def klasifikasi_mood(mood_score, aktivitas):
-    negatif = sum(1 for a in aktivitas if any(a in aktivitas_kategori[kat]['negatif'] for kat in aktivitas_kategori))
-    positif = sum(1 for a in aktivitas if any(a in aktivitas_kategori[kat]['positif'] for kat in aktivitas_kategori))
+    negatif = sum(1 for a in aktivitas if any(a in aktivitas_kategori[k]['negatif'] for k in aktivitas_kategori))
+    positif = sum(1 for a in aktivitas if any(a in aktivitas_kategori[k]['positif'] for k in aktivitas_kategori))
     if mood_score >= 4 and positif > negatif:
         return "Bahagia"
     elif mood_score <= 2 and negatif >= positif:
@@ -96,18 +103,20 @@ def kutipan_motivasi():
 
 # ====================== Login Page =======================
 def login():
-    st.title("🔐 Login")
+    st.title("🔐 Login SmartMood Tracker")
     username = st.text_input("Username")
     password = st.text_input("Password", type="password")
+
     if st.button("🔓 Login"):
-        if username and password:
+        if username in USERS and USERS[username] == password:
             st.session_state.logged_in = True
             st.session_state.username = username
-            st.success(f"Login sebagai *{username}*")
+            st.success(f"Login berhasil sebagai *{username}*")
+            st.experimental_rerun()
         else:
-            st.error("Silakan isi semua kolom.")
+            st.error("Username atau password salah. Silakan coba lagi.")
 
-# ====================== Main Page =======================
+# ====================== Main App =======================
 def main_app():
     st.sidebar.title("📋 Menu")
     menu = st.sidebar.selectbox("Pilih menu", [
@@ -162,11 +171,12 @@ def main_app():
 
     elif menu == "Tentang":
         st.subheader("Tentang Aplikasi")
-        st.write("SmartMood Tracker adalah aplikasi untuk mencatat mood harian dan aktivitas, serta memberikan saran dan diagnosis berdasarkan data FitLife.")
+        st.write("SmartMood Tracker adalah aplikasi untuk mencatat mood harian dan aktivitas, serta memberikan saran dan diagnosis berdasarkan data FitLife. Aplikasi ini dirancang untuk membantu kamu memahami perasaan dan kebiasaan sehari-hari.")
 
     elif menu == "Logout":
         st.session_state.logged_in = False
         st.session_state.username = ""
+        st.success("Berhasil logout.")
         st.experimental_rerun()
 
 # ====================== App Start =======================
