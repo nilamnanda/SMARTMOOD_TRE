@@ -17,22 +17,23 @@ DATA_FILE = "smartmood_data.csv"
 # ====================== Kategori & Aktivitas =======================
 aktivitas_kategori = {
     "Akademik": {
-        "positif": ["Mengerjakan tugas"],
-        "negatif": ["Belajar"]
+        "positif": ["Tugas selesai", "Belajar fokus", "Laprak rapi"],
+        "negatif": ["Tugas numpuk", "Belajar ngaret", "Stres tugas"]
     },
     "Sosial": {
-        "positif": ["Bertemu teman"],
-        "negatif": []
+        "positif": ["Ngobrol santai", "Main bareng", "Jalan-jalan"],
+        "negatif": ["Sendiri aja", "Kurang interaksi", "Canggung banget"]
     },
     "Kesehatan": {
-        "positif": ["Tidur cukup"],
-        "negatif": []
+        "positif": ["Tidur cukup", "Makan sehat", "Gerak ringan"],
+        "negatif": ["Begadang terus", "Lupa makan", "Kurang gerak"]
     },
     "Lainnya": {
-        "positif": [],
-        "negatif": ["Bermain game"]
+        "positif": ["Denger musik", "Beres kamar"],
+        "negatif": ["Main terus", "Scroll sosmed lama", "Belanja banyak"]
     }
 }
+
 
 # ====================== Fungsi =======================
 def simpan_data(tanggal, username, mood, aktivitas, catatan):
