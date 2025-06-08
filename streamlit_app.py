@@ -62,6 +62,19 @@ def get_saran(aktivitas, mood):
     }
     return random.choice(saran_dict.get(aktivitas, ["Lanjutkan aktivitas positifmu!"]))
 
+# ========== Penilaian Mood Berdasarkan Aktivitas ==========
+def penilaian_mood(mood, aktivitas):
+    aktivitas_negatif = ["Begadang"]
+    aktivitas_positif = ["Tidur cukup", "Belajar", "Mengerjakan tugas", "Membaca", "Bersosialisasi", "Bertemu teman", "Bergabung dalam komunitas"]
+
+    if aktivitas in aktivitas_negatif:
+        if mood >= 4:
+            return "⚠️ Mood tampak baik tapi aktivitas kurang sehat"
+    elif aktivitas in aktivitas_positif:
+        if mood <= 2:
+            return "😟 Aktivitasmu baik, mungkin ada faktor lain yang memengaruhi mood"
+    return "✅ Mood dan aktivitas tampak sejalan"
+
 # ========== Input Mood Harian ==========
 if menu == "📅 Input Mood Harian":
     st.subheader("📅 Input Mood dan Aktivitas Harian")
@@ -79,6 +92,7 @@ if menu == "📅 Input Mood Harian":
 
     aktivitas = st.selectbox("Pilih aktivitas yang dilakukan", aktivitas_opsi)
     saran = get_saran(aktivitas, mood)
+    evaluasi = penilaian_mood(mood, aktivitas)
 
     if st.button("📅 Simpan"):
         new_row = pd.DataFrame([{
@@ -86,7 +100,8 @@ if menu == "📅 Input Mood Harian":
             "Aktivitas": aktivitas,
             "Kategori": aktivitas_kategori,
             "Mood": mood,
-            "Saran": saran
+            "Saran": saran,
+            "Evaluasi": evaluasi
         }])
         if os.path.exists(filename):
             df = pd.read_csv(filename)
@@ -96,6 +111,7 @@ if menu == "📅 Input Mood Harian":
         df.to_csv(filename, index=False)
         st.success("✅ Data berhasil disimpan!")
         st.info(f"💡 Saran: {saran}")
+        st.info(f"🧠 Evaluasi: {evaluasi}")
 
 # ========== Grafik & Heatmap ==========
 elif menu == "📊 Grafik & Heatmap":
@@ -160,6 +176,7 @@ elif menu == "ℹ️ Tentang Aplikasi":
     **SmartMood Tracker** adalah aplikasi pelacak suasana hati harian.
     - Input mood dan aktivitas
     - Lihat grafik dan heatmap
+    - Evaluasi kombinasi aktivitas & mood
     - Unduh data pribadi
     """)
 
