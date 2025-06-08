@@ -46,71 +46,18 @@ menu = st.sidebar.radio("Menu", [
     "🚪 Logout"
 ])
 
-# ========== Kategori dan Aktivitas ==========
-kategori_aktivitas = {
-    "Akademik": ["mengerjakan tugas", "belajar kelompok", "ikut kelas online"],
-    "Hiburan": ["menonton film", "main game", "jalan-jalan"],
-    "Kesehatan": ["olahraga", "meditasi", "makan sehat"],
-    "Negatif": ["berdebat", "tidak produktif", "marah"]
-}
-
-saran_bahagia = [
-    "Tetap pertahankan semangatmu hari ini!",
-    "Bagikan kebahagiaanmu ke orang lain!",
-    "Cari cara baru untuk bersyukur hari ini!",
-    "Gunakan energi positif ini untuk menyelesaikan tugas penting!",
-    "Tantang dirimu dengan sesuatu yang baru dan menyenangkan!",
-    "Ajak orang terdekat untuk merayakan momen baikmu!"
-]
-
-# ========== Fungsi Penilaian ==========
-def klasifikasi_mood(mood, aktivitas):
-    aktivitas_lower = aktivitas.lower()
-    negatif = [k for k in kategori_aktivitas["Negatif"] if k in aktivitas_lower]
-    positif = [k for k in kategori_aktivitas["Kesehatan"] + kategori_aktivitas["Akademik"] if k in aktivitas_lower]
-
-    if negatif and mood >= 4:
-        return "Campur Aduk"
-    if negatif:
-        return "Sedih"
-    if positif and mood >= 4:
-        return "Bahagia"
-    if mood <= 2:
-        return "Sedih"
-    elif mood == 3:
-        return "Netral"
-    return "Cukup Senang"
-
-def saran_mood(klasifikasi):
-    if klasifikasi == "Bahagia":
-        return random.choice(saran_bahagia)
-    elif klasifikasi == "Sedih":
-        return "Coba lakukan aktivitas yang kamu sukai atau berbicara dengan teman."
-    elif klasifikasi == "Campur Aduk":
-        return "Moodmu terlihat tinggi, tapi aktivitasmu tidak sehat. Perlu introspeksi."
-    elif klasifikasi == "Netral":
-        return "Hari yang biasa saja. Coba lakukan sesuatu yang menyenangkan."
-    return "Terus jaga keseimbangan harimu."
-
 # ========== Input Mood Harian ==========
 if menu == "📅 Input Mood Harian":
     st.subheader("📅 Input Mood dan Aktivitas Harian")
     tanggal = st.date_input("Tanggal", datetime.now().date())
+    aktivitas = st.text_input("Aktivitas hari ini")
     mood = st.slider("Skor Mood (1=buruk, 5=baik)", 1, 5, 3)
 
-    kategori = st.selectbox("Pilih kategori aktivitas", list(kategori_aktivitas.keys()))
-    aktivitas = st.selectbox("Pilih aktivitas", kategori_aktivitas[kategori])
-
     if st.button("📅 Simpan"):
-        klasifikasi = klasifikasi_mood(mood, aktivitas)
-        saran = saran_mood(klasifikasi)
         new_row = pd.DataFrame([{
             "Tanggal": tanggal,
-            "Mood": mood,
-            "Kategori": kategori,
             "Aktivitas": aktivitas,
-            "Klasifikasi": klasifikasi,
-            "Saran": saran
+            "Mood": mood
         }])
         if os.path.exists(filename):
             df = pd.read_csv(filename)
@@ -118,8 +65,7 @@ if menu == "📅 Input Mood Harian":
         else:
             df = new_row
         df.to_csv(filename, index=False)
-        st.success(f"✅ Mood kamu: {klasifikasi}")
-        st.info(f"💡 Saran: {saran}")
+        st.success("✅ Data berhasil disimpan!")
 
 # ========== Grafik & Heatmap ==========
 elif menu == "📊 Grafik & Heatmap":
@@ -131,10 +77,12 @@ elif menu == "📊 Grafik & Heatmap":
         df["Tanggal"] = pd.to_datetime(df["Tanggal"])
         df = df.sort_values("Tanggal")
 
+        # Line Chart Mingguan
         df["Week"] = df["Tanggal"].dt.isocalendar().week
         weekly_mood = df.groupby("Week")["Mood"].mean()
         st.line_chart(weekly_mood)
 
+        # Heatmap
         df["Weekday"] = df["Tanggal"].dt.weekday
         weeks = sorted(df["Week"].unique())
         heatmap_data = np.full((7, len(weeks)), np.nan)
@@ -182,10 +130,9 @@ elif menu == "ℹ️ Tentang Aplikasi":
     st.subheader("ℹ️ Info Aplikasi")
     st.markdown("""
     **SmartMood Tracker** adalah aplikasi pelacak suasana hati harian.
-    - Input mood dan aktivitas berdasarkan kategori
-    - Dapatkan saran dan kutipan
+    - Input mood dan aktivitas
     - Lihat grafik dan heatmap
-    - Unduh dan reset data
+    - Unduh data pribadi
     """)
 
 # ========== Reset Data ==========
