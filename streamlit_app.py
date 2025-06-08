@@ -3,26 +3,36 @@ import pandas as pd
 import datetime
 import os
 import random
+import json
+import hashlib
 
-# ====================== Konfigurasi Halaman =======================
+# ================== Konfigurasi Halaman ==================
 st.set_page_config(page_title="SmartMood Tracker", layout="wide")
 
-# ====================== Inisialisasi Session =======================
+# ================== Session State ==================
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
 if 'username' not in st.session_state:
     st.session_state.username = ""
 
 DATA_FILE = "smartmood_data.csv"
+USER_FILE = "users.json"
 
-# ====================== User Login Data (Dummy) =======================
-USERS = {
-    "user1": "password123",
-    "user2": "rahasiaku",
-    "admin": "adminpass"
-}
+# ================== Utility Functions ==================
+def hash_password(password):
+    return hashlib.sha256(password.encode()).hexdigest()
 
-# ====================== Kategori & Aktivitas =======================
+def load_users():
+    if os.path.exists(USER_FILE):
+        with open(USER_FILE, "r") as f:
+            return json.load(f)
+    return {}
+
+def save_users(users):
+    with open(USER_FILE, "w") as f:
+        json.dump(users, f)
+
+# ============== Mood Activity Categories ==============
 aktivitas_kategori = {
     "Akademik": {
         "positif": ["Tugas selesai", "Belajar fokus", "Laprak rapi"],
@@ -42,7 +52,7 @@ aktivitas_kategori = {
     }
 }
 
-# ====================== Fungsi =======================
+# ============== Fungsi Pendukung ==============
 def simpan_data(tanggal, username, mood, aktivitas, catatan):
     new_data = pd.DataFrame([{
         "Tanggal": tanggal,
@@ -101,22 +111,43 @@ def kutipan_motivasi():
     ]
     return random.choice(quotes)
 
-# ====================== Login Page =======================
-def login():
-    st.title("🔐 Login SmartMood Tracker")
-    username = st.text_input("Username")
-    password = st.text_input("Password", type="password")
+# ============== Login & Register Page ==============
+def login_register_page():
+    st.title("🔐 SmartMood Tracker")
+    mode = st.radio("Pilih opsi", ["Login", "Daftar (Register)"])
 
-    if st.button("🔓 Login"):
-        if username in USERS and USERS[username] == password:
-            st.session_state.logged_in = True
-            st.session_state.username = username
-            st.success(f"Login berhasil sebagai *{username}*")
-            st.experimental_rerun()
-        else:
-            st.error("Username atau password salah. Silakan coba lagi.")
+    if mode == "Login":
+        username = st.text_input("Username")
+        password = st.text_input("Password", type="password")
 
-# ====================== Main App =======================
+        if st.button("Masuk"):
+            users = load_users()
+            if username in users and users[username] == hash_password(password):
+                st.session_state.logged_in = True
+                st.session_state.username = username
+                st.success(f"Selamat datang, {username}!")
+                st.experimental_rerun()
+            else:
+                st.error("Username atau password salah.")
+
+    else:  # Register
+        new_user = st.text_input("Buat username")
+        new_pass = st.text_input("Buat password", type="password")
+        confirm_pass = st.text_input("Konfirmasi password", type="password")
+
+        if st.button("Daftar"):
+            users = load_users()
+            if new_user in users:
+                st.warning("Username sudah digunakan.")
+            elif new_pass != confirm_pass:
+                st.warning("Password tidak cocok.")
+            else:
+                users[new_user] = hash_password(new_pass)
+                save_users(users)
+                st.success("Pendaftaran berhasil! Silakan login.")
+                st.experimental_rerun()
+
+# ============== Aplikasi Utama ==============
 def main_app():
     st.sidebar.title("📋 Menu")
     menu = st.sidebar.selectbox("Pilih menu", [
@@ -179,8 +210,8 @@ def main_app():
         st.success("Berhasil logout.")
         st.experimental_rerun()
 
-# ====================== App Start =======================
+# ============== Start Aplikasi ==============
 if not st.session_state.logged_in:
-    login()
+    login_register_page()
 else:
     main_app()
