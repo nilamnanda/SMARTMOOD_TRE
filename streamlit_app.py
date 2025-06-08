@@ -111,41 +111,33 @@ def kutipan_motivasi():
     ]
     return random.choice(quotes)
 
-# ============== Login & Register Page ==============
+# ============== Login Page (Auto Register) ==============
 def login_register_page():
     st.title("🔐 SmartMood Tracker")
-    mode = st.radio("Pilih opsi", ["Login", "Daftar (Register)"])
+    st.write("Masukkan username dan password untuk login. Jika belum punya akun, akan dibuat otomatis.")
 
-    if mode == "Login":
-        username = st.text_input("Username")
-        password = st.text_input("Password", type="password")
+    username = st.text_input("Username")
+    password = st.text_input("Password", type="password")
 
-        if st.button("Masuk"):
-            users = load_users()
-            if username in users and users[username] == hash_password(password):
+    if st.button("Masuk"):
+        users = load_users()
+        hashed = hash_password(password)
+
+        if username in users:
+            if users[username] == hashed:
                 st.session_state.logged_in = True
                 st.session_state.username = username
-                st.success(f"Selamat datang, {username}!")
+                st.success(f"Selamat datang kembali, {username}!")
                 st.experimental_rerun()
             else:
-                st.error("Username atau password salah.")
-
-    else:  # Register
-        new_user = st.text_input("Buat username")
-        new_pass = st.text_input("Buat password", type="password")
-        confirm_pass = st.text_input("Konfirmasi password", type="password")
-
-        if st.button("Daftar"):
-            users = load_users()
-            if new_user in users:
-                st.warning("Username sudah digunakan.")
-            elif new_pass != confirm_pass:
-                st.warning("Password tidak cocok.")
-            else:
-                users[new_user] = hash_password(new_pass)
-                save_users(users)
-                st.success("Pendaftaran berhasil! Silakan login.")
-                st.experimental_rerun()
+                st.error("Password salah.")
+        else:
+            users[username] = hashed
+            save_users(users)
+            st.success(f"Akun baru dibuat untuk {username}. Selamat datang!")
+            st.session_state.logged_in = True
+            st.session_state.username = username
+            st.experimental_rerun()
 
 # ============== Aplikasi Utama ==============
 def main_app():
