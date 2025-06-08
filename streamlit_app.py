@@ -37,7 +37,7 @@ filename = f"{DATA_FOLDER}/data_{username}.csv"
 
 st.sidebar.success(f"Login sebagai: {username}")
 menu = st.sidebar.radio("Menu", [
-    "📥 Input Mood Harian", 
+    "📅 Input Mood Harian", 
     "📊 Grafik & Heatmap", 
     "📂 Lihat Data", 
     "📌 Statistik", 
@@ -54,8 +54,13 @@ saran_bahagia = [
     "Bagikan kebahagiaanmu ke orang lain!",
     "Cari cara baru untuk bersyukur hari ini!",
     "Jaga kesehatan fisik dan mentalmu!",
-    "Gunakan energi positif ini untuk menyelesaikan tugas penting!"
+    "Gunakan energi positif ini untuk menyelesaikan tugas penting!",
+    "Tantang dirimu dengan sesuatu yang baru dan menyenangkan!",
+    "Ajak orang terdekat untuk merayakan momen baikmu!"
 ]
+
+aktivitas_opsi = aktivitas_positif + aktivitas_negatif + ["istirahat", "menonton", "jalan-jalan", "mendengarkan musik", "masak"]
+
 
 def klasifikasi_mood(mood, aktivitas):
     aktivitas_lower = aktivitas.lower()
@@ -85,13 +90,13 @@ def saran_mood(klasifikasi):
     return "Terus jaga keseimbangan harimu."
 
 # ========== Input Mood Harian ==========
-if menu == "📥 Input Mood Harian":
-    st.subheader("📥 Input Mood dan Aktivitas Harian")
+if menu == "📅 Input Mood Harian":
+    st.subheader("📅 Input Mood dan Aktivitas Harian")
     tanggal = st.date_input("Tanggal", datetime.now().date())
-    aktivitas = st.text_input("Aktivitas hari ini")
+    aktivitas = st.selectbox("Pilih aktivitas hari ini", sorted(aktivitas_opsi))
     mood = st.slider("Skor Mood (1=buruk, 5=baik)", 1, 5, 3)
 
-    if st.button("💾 Simpan"):
+    if st.button("📅 Simpan"):
         klasifikasi = klasifikasi_mood(mood, aktivitas)
         saran = saran_mood(klasifikasi)
         new_row = pd.DataFrame([{
