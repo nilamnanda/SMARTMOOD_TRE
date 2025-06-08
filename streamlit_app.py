@@ -46,48 +46,51 @@ menu = st.sidebar.radio("Menu", [
     "🚪 Logout"
 ])
 
-# ========== Fungsi Tambahan ==========
-aktivitas_negatif = ["berdebat", "tidak produktif", "malas", "tidak ngapa-ngapain", "marah"]
+# ========== Data & Saran ==========
 aktivitas_positif = ["olahraga", "belajar", "membaca", "meditasi", "bertemu teman", "kerja"]
-saran_bahagia = [
-    "Tetap pertahankan semangatmu hari ini!",
-    "Bagikan kebahagiaanmu ke orang lain!",
-    "Cari cara baru untuk bersyukur hari ini!",
-    "Jaga kesehatan fisik dan mentalmu!",
-    "Gunakan energi positif ini untuk menyelesaikan tugas penting!",
-    "Tantang dirimu dengan sesuatu yang baru dan menyenangkan!",
-    "Ajak orang terdekat untuk merayakan momen baikmu!"
-]
-
+aktivitas_negatif = ["berdebat", "tidak produktif", "malas", "tidak ngapa-ngapain", "marah"]
 aktivitas_opsi = aktivitas_positif + aktivitas_negatif + ["istirahat", "menonton", "jalan-jalan", "mendengarkan musik", "masak"]
 
+saran_dict = {
+    "Sedih": [
+        "Coba lakukan aktivitas yang kamu sukai",
+        "Luangkan waktu untuk dirimu sendiri",
+        "Berbicaralah dengan teman dekat atau keluarga",
+        "Jangan lupa tidur cukup dan makan yang bergizi"
+    ],
+    "Netral": [
+        "Coba lakukan sesuatu yang menyenangkan hari ini",
+        "Mungkin waktu yang tepat untuk eksplor hobi baru",
+        "Luangkan waktu singkat untuk refleksi diri"
+    ],
+    "Cukup Senang": [
+        "Pertahankan semangatmu!",
+        "Nikmati hari dengan produktivitas seimbang",
+        "Berbagi kebaikan bisa meningkatkan suasana hati"
+    ],
+    "Bahagia": [
+        "Tetap pertahankan semangatmu hari ini!",
+        "Bagikan kebahagiaanmu ke orang lain!",
+        "Cari cara baru untuk bersyukur hari ini!",
+        "Jaga kesehatan fisik dan mentalmu!",
+        "Gunakan energi positif ini untuk menyelesaikan tugas penting!",
+        "Tantang dirimu dengan sesuatu yang baru dan menyenangkan!",
+        "Ajak orang terdekat untuk merayakan momen baikmu!"
+    ]
+}
 
-def klasifikasi_mood(mood, aktivitas):
-    aktivitas_lower = aktivitas.lower()
-    if any(neg in aktivitas_lower for neg in aktivitas_negatif):
-        if mood >= 4:
-            return "Campur Aduk"
-        elif mood <= 2:
-            return "Sedih"
-    if any(pos in aktivitas_lower for pos in aktivitas_positif):
-        if mood >= 4:
-            return "Bahagia"
+# ========== Fungsi ==========
+def klasifikasi_mood(mood):
     if mood <= 2:
         return "Sedih"
     elif mood == 3:
         return "Netral"
-    return "Cukup Senang"
+    elif mood == 4:
+        return "Cukup Senang"
+    return "Bahagia"
 
 def saran_mood(klasifikasi):
-    if klasifikasi == "Bahagia":
-        return random.choice(saran_bahagia)
-    elif klasifikasi == "Sedih":
-        return "Coba lakukan aktivitas yang kamu sukai atau berbicara dengan teman."
-    elif klasifikasi == "Campur Aduk":
-        return "Mungkin kamu merasa bingung hari ini. Luangkan waktu untuk refleksi."
-    elif klasifikasi == "Netral":
-        return "Hari yang biasa saja. Coba lakukan sesuatu yang menyenangkan."
-    return "Terus jaga keseimbangan harimu."
+    return random.choice(saran_dict.get(klasifikasi, ["Jaga semangatmu hari ini!"]))
 
 # ========== Input Mood Harian ==========
 if menu == "📅 Input Mood Harian":
@@ -97,7 +100,7 @@ if menu == "📅 Input Mood Harian":
     mood = st.slider("Skor Mood (1=buruk, 5=baik)", 1, 5, 3)
 
     if st.button("📅 Simpan"):
-        klasifikasi = klasifikasi_mood(mood, aktivitas)
+        klasifikasi = klasifikasi_mood(mood)
         saran = saran_mood(klasifikasi)
         new_row = pd.DataFrame([{
             "Tanggal": tanggal,
