@@ -5,8 +5,7 @@ import matplotlib.pyplot as plt
 import os
 import random
 from datetime import datetime
-import streamlit as st
-st.write(st.__version__)
+
 
 # Konfigurasi awal HARUS di baris pertama
 st.set_page_config(page_title="SmartMood Tracker", layout="wide")
