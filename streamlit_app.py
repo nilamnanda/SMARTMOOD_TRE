@@ -71,18 +71,22 @@ def simpan_data(tanggal, username, mood, aktivitas, catatan):
 def klasifikasi_mood(mood_score, aktivitas):
     negatif = sum(1 for a in aktivitas if any(a in aktivitas_kategori[k]['negatif'] for k in aktivitas_kategori))
     positif = sum(1 for a in aktivitas if any(a in aktivitas_kategori[k]['positif'] for k in aktivitas_kategori))
+    
     if mood_score >= 4 and positif > negatif:
         return "Bahagia"
     elif mood_score <= 2 and negatif >= positif:
         return "Sedih"
+    elif mood_score >= 4 and negatif >= positif:
+        return "Konflik"
     else:
         return "Biasa"
 
 def diagnosis_aktivitas(kategori):
     diagnosis_dict = {
-        "Bahagia": "🌈 Aktivitasmu tampak positif dan kamu merasa baik. Teruskan dengan kegiatan menyenangkan atau waktu tenang untuk diri sendiri.",
-        "Sedih": "💤 Aktivitasmu tampak berat atau melelahkan. Cobalah istirahat, bicara dengan teman, atau lakukan hal yang menenangkan.",
-        "Biasa": "🧠 Mood kamu cenderung netral hari ini, dan aktivitasmu seimbang. Mungkin hari ini bukan hari terbaik, tapi kamu tetap bertahan. Coba lakukan hal kecil yang membuatmu tersenyum."
+        "Bahagia": "🌈 Kamu tampak sangat positif hari ini. Pertahankan semangat ini dan luangkan waktu untuk bersyukur atas hal-hal kecil.",
+        "Sedih": "💤 Hari ini mungkin terasa berat. Tidak apa-apa untuk merasa sedih. Coba istirahat yang cukup dan bicarakan perasaanmu dengan orang yang kamu percaya.",
+        "Biasa": "🧠 Hari ini tampaknya seimbang. Kamu bisa coba sedikit aktivitas menyenangkan seperti jalan kaki atau journaling agar lebih rileks.",
+        "Konflik": "⚠️ Meskipun mood kamu tinggi, beberapa aktivitasmu menunjukkan sinyal stres. Luangkan waktu untuk refleksi, mungkin ada hal yang kamu tekan tanpa sadar."
     }
     return diagnosis_dict.get(kategori, "Tetap semangat!")
 
@@ -91,16 +95,17 @@ def kutipan_motivasi():
         "Hidup adalah 10% apa yang terjadi pada kita dan 90% bagaimana kita meresponsnya.",
         "Setiap hari adalah kesempatan baru untuk menjadi lebih baik.",
         "Jangan biarkan kemarin menghabiskan terlalu banyak dari hari ini.",
-        "Kadang kamu harus berhenti berpikir terlalu banyak dan cukup rasakan saja.",
-        "Waktu yang sulit tidak bertahan lama, tapi orang yang tangguh bertahan.",
-        "Istirahat juga produktif jika itu membuatmu pulih."
+        "Terkadang istirahat bukan kemunduran, tapi persiapan untuk lompatan.",
+        "Hal besar sering dimulai dari langkah kecil yang konsisten.",
+        "Jangan takut untuk merasa. Itu tandanya kamu hidup dan peduli.",
+        "Kamu sudah berjalan sejauh ini, jangan remehkan kekuatanmu hari ini."
     ]
     return random.choice(quotes)
 
 # ============== Login Page (Auto Register) ==============
 def login_register_page():
     st.title("🔐 SmartMood Tracker")
-    st.write("Masukkan username dan password. Jika belum punya akun, akan dibuat otomatis.")
+    st.write("Masukkan username dan password untuk login. Jika belum punya akun, akan dibuat otomatis.")
 
     username = st.text_input("Username")
     password = st.text_input("Password", type="password")
@@ -148,58 +153,21 @@ def main_app():
             if aktivitas_dipilih:
                 simpan_data(tanggal, st.session_state.username, mood, ", ".join(aktivitas_dipilih), catatan)
                 kategori = klasifikasi_mood(mood, aktivitas_dipilih)
-                emoji = "😊" if kategori == "Bahagia" else "😢" if kategori == "Sedih" else "😐"
+                emoji = {"Bahagia": "😊", "Sedih": "😢", "Biasa": "😐", "Konflik": "⚠️"}[kategori]
                 st.success(f"Mood kamu hari ini: {emoji} {kategori}")
-                st.markdown(f"<div style='background-color:#dbeafe;padding:10px;border-radius:5px'><b>{diagnosis_aktivitas(kategori)}</b></div>", unsafe_allow_html=True)
+                st.markdown(f"<div style='background-color:#f5f5dc;padding:10px;border-radius:5px'><b>{diagnosis_aktivitas(kategori)}</b></div>", unsafe_allow_html=True)
                 st.markdown(f"> 💡 *{kutipan_motivasi()}*")
-                st.caption("\n📌 Saran di atas berdasarkan kombinasi mood score dan jenis aktivitasmu hari ini.")
             else:
                 st.warning("Pilih minimal satu aktivitas.")
 
     elif menu == "Lihat Grafik Mood":
-        st.subheader("📊 Visualisasi Mood & Aktivitas")
-
         if os.path.exists(DATA_FILE):
             df = pd.read_csv(DATA_FILE)
-
-            if not df.empty and {"Tanggal", "Mood", "Username", "Aktivitas"}.issubset(df.columns):
-                df_user = df[df["Username"] == st.session_state.username].copy()
-
-                if not df_user.empty:
-                    df_user["Tanggal"] = pd.to_datetime(df_user["Tanggal"], errors='coerce')
-                    df_user["Mood"] = pd.to_numeric(df_user["Mood"], errors="coerce")
-                    df_user = df_user.dropna(subset=["Tanggal", "Mood"])
-                    df_user = df_user.sort_values("Tanggal")
-
-                    min_date, max_date = df_user["Tanggal"].min(), df_user["Tanggal"].max()
-                    st.caption(f"Rentang data tersedia: {min_date.date()} - {max_date.date()}")
-                    date_range = st.date_input("Filter tanggal", [min_date.date(), max_date.date()])
-                    if len(date_range) == 2:
-                        df_user = df_user[(df_user["Tanggal"].dt.date >= date_range[0]) & 
-                                          (df_user["Tanggal"].dt.date <= date_range[1])]
-
-                    st.markdown("#### 📈 Mood Harian")
-                    st.line_chart(df_user.set_index("Tanggal")["Mood"])
-
-                    st.markdown("#### 🔥 Heatmap Mood (mingguan)")
-                    df_user["Week"] = df_user["Tanggal"].dt.strftime("%Y-%U")
-                    df_user["Day"] = df_user["Tanggal"].dt.strftime("%A")
-                    pivot = df_user.pivot_table(index="Day", columns="Week", values="Mood", aggfunc="mean")
-                    days_order = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-                    pivot = pivot.reindex(days_order)
-                    st.dataframe(pivot.style.background_gradient(cmap='YlGnBu', axis=None).format(precision=1))
-
-                    st.markdown("#### 🧭 Aktivitas Paling Sering Dipilih")
-                    aktivitas_series = df_user["Aktivitas"].dropna().str.split(", ")
-                    all_aktivitas = [item for sublist in aktivitas_series for item in sublist]
-                    aktivitas_df = pd.Series(all_aktivitas).value_counts().head(10)
-                    st.bar_chart(aktivitas_df)
-                else:
-                    st.info("Belum ada data untuk pengguna ini.")
-            else:
-                st.warning("Data tidak lengkap atau salah format.")
+            df_user = df[df["Username"] == st.session_state.username]
+            df_user["Tanggal"] = pd.to_datetime(df_user["Tanggal"])
+            st.line_chart(df_user.set_index("Tanggal")["Mood"])
         else:
-            st.warning("Belum ada file data.")
+            st.warning("Belum ada data.")
 
     elif menu == "Lihat Data CSV":
         if os.path.exists(DATA_FILE):
@@ -217,7 +185,7 @@ def main_app():
 
     elif menu == "Tentang":
         st.subheader("Tentang Aplikasi")
-        st.write("SmartMood Tracker adalah aplikasi untuk mencatat mood harian dan aktivitas, serta memberikan diagnosis berbasis kombinasi data dan kebiasaan harianmu. Didesain agar kamu bisa lebih mengenali diri sendiri dan menjaga keseimbangan hidup.")
+        st.write("SmartMood Tracker adalah aplikasi untuk mencatat mood harian dan aktivitas, serta memberikan diagnosis berdasarkan data dan refleksi personal. Dibuat untuk membantumu memahami perasaan dan kebiasaan harian secara lebih bermakna.")
 
     elif menu == "Logout":
         for key in list(st.session_state.keys()):
