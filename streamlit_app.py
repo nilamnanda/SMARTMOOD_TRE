@@ -111,7 +111,7 @@ def login_register_page():
                 st.session_state.logged_in = True
                 st.session_state.username = username
                 st.success(f"Selamat datang kembali, {username}!")
-                st.experimental_rerun()  # ✅ Perbaikan di sini
+                st.rerun()
             else:
                 st.error("Password salah.")
         else:
@@ -120,7 +120,7 @@ def login_register_page():
             st.success(f"Akun baru dibuat untuk {username}. Selamat datang!")
             st.session_state.logged_in = True
             st.session_state.username = username
-            st.experimental_rerun()  # ✅ Perbaikan di sini
+            st.rerun()
 
 # ============== Aplikasi Utama ==============
 def main_app():
@@ -182,7 +182,7 @@ def main_app():
         for key in list(st.session_state.keys()):
             del st.session_state[key]
         st.success("Berhasil logout. Sampai jumpa lagi ya, semangat terus! 💪")
-        st.experimental_rerun()  # ✅ Perbaikan di sini
+        st.rerun()
 
 # ============== Start Aplikasi ==============
 if not st.session_state.logged_in:
