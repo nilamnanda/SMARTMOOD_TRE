@@ -33,24 +33,32 @@ def save_users(users):
         json.dump(users, f)
 
 # ============== Mood Activity Categories ==============
-aktivitas_kategori = {
-    "Akademik": {
-        "positif": ["Tugas selesai", "Belajar", "Laprak selesai"],
-        "negatif": ["Tugas numpuk", "Menunda Belajar", "Stres tugas"]
-    },
-    "Sosial": {
-        "positif": ["Ngobrol santai", "Main bareng", "Jalan-jalan"],
-        "negatif": ["Sendiri aja", "Kurang interaksi", "Canggung banget"]
-    },
-    "Kesehatan": {
-        "positif": ["Tidur cukup", "Makan sehat", "Gerak ringan"],
-        "negatif": ["Begadang terus", "Lupa makan", "Kurang gerak", "Sakit"]
-    },
-    "Lainnya": {
-        "positif": ["Denger musik", "Beres kamar"],
-        "negatif": ["Main terus", "Scroll sosmed lama", "Belanja banyak"]
-    }
-}
+def diagnosis_aktivitas(aktivitas):
+    pesan = []
+
+    for a in aktivitas:
+        if a in ["Tugas selesai", "Belajar", "Laprak selesai"]:
+            pesan.append("📘 Kamu produktif hari ini, hebat!")
+        elif a in ["Tugas numpuk", "Menunda Belajar", "Stres tugas"]:
+            pesan.append("📚 Jangan lupa istirahat ya. Ambil napas dulu.")
+        elif a in ["Ngobrol santai", "Main bareng", "Jalan-jalan"]:
+            pesan.append("👫 Seru ya bisa bersosialisasi. Tetap jaga momen ini.")
+        elif a in ["Sendiri aja", "Kurang interaksi", "Canggung banget"]:
+            pesan.append("🌧 Merasa sendiri itu wajar. Coba sapa teman lama?")
+        elif a in ["Tidur cukup", "Makan sehat", "Gerak ringan"]:
+            pesan.append("💪 Tubuhmu pasti senang hari ini. Pertahankan ya!")
+        elif a in ["Begadang terus", "Lupa makan", "Kurang gerak", "Sakit"]:
+            pesan.append("⚠️ Jaga kesehatanmu, ya. Tubuhmu butuh perhatian.")
+        elif a in ["Denger musik", "Beres kamar"]:
+            pesan.append("🎶 Hal kecil ini bikin hati lebih ringan. Good job.")
+        elif a in ["Main terus", "Scroll sosmed lama", "Belanja banyak"]:
+            pesan.append("🌀 Hati-hati ya, jangan sampai hal ini jadi pelarian.")
+
+    if not pesan:
+        return "✨ Apa pun yang kamu lakukan, semoga harimu bermakna."
+    else:
+        return "\n".join(random.sample(pesan, min(2, len(pesan))))
+
 
 # ============== Fungsi Pendukung ==============
 def simpan_data(tanggal, username, mood, aktivitas, catatan):
