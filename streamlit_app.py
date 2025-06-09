@@ -1,196 +1,109 @@
+# SmartMood Tracker - Versi Terbaru
+
 import streamlit as st
 import pandas as pd
-import datetime
 import os
-import random
-import json
-import hashlib
+import datetime
+import matplotlib.pyplot as plt
+import seaborn as sns
 
-# ================== Konfigurasi Halaman ==================
-st.set_page_config(page_title="SmartMood Tracker", layout="wide")
+st.set_page_config(layout="wide", page_title="SmartMood Tracker")
 
-# ================== Session State ==================
-if 'logged_in' not in st.session_state:
-    st.session_state.logged_in = False
-if 'username' not in st.session_state:
-    st.session_state.username = ""
-
+# Inisialisasi data CSV
 DATA_FILE = "smartmood_data.csv"
-USER_FILE = "users.json"
-
-# ================== Utility Functions ==================
-def hash_password(password):
-    return hashlib.sha256(password.encode()).hexdigest()
-
-def load_users():
-    if os.path.exists(USER_FILE):
-        with open(USER_FILE, "r") as f:
-            return json.load(f)
-    return {}
-
-def save_users(users):
-    with open(USER_FILE, "w") as f:
-        json.dump(users, f)
-
-# ============== Mood Activity Categories ==============
-aktivitas_kategori = {
-    "Akademik": {
-        "positif": ["Tugas selesai", "Belajar", "Laprak selesai"],
-        "negatif": ["Tugas numpuk", "Menunda Belajar", "Stres tugas"]
-    },
-    "Sosial": {
-        "positif": ["Ngobrol santai", "Main bareng", "Jalan-jalan"],
-        "negatif": ["Sendiri aja", "Kurang interaksi", "Canggung banget"]
-    },
-    "Kesehatan": {
-        "positif": ["Tidur cukup", "Makan sehat", "Gerak ringan"],
-        "negatif": ["Begadang terus", "Lupa makan", "Kurang gerak", "Sakit"]
-    },
-    "Lainnya": {
-        "positif": ["Denger musik", "Beres kamar"],
-        "negatif": ["Main terus", "Scroll sosmed lama", "Belanja banyak"]
-    }
-}
-
-# ============== Fungsi Pendukung ==============
-def simpan_data(tanggal, username, mood, aktivitas, catatan):
-    new_data = pd.DataFrame([{
-        "Tanggal": tanggal,
-        "Username": username,
-        "Mood": mood,
-        "Aktivitas": aktivitas,
-        "Catatan": catatan
-    }])
-    if os.path.exists(DATA_FILE):
-        df = pd.read_csv(DATA_FILE)
-        df = pd.concat([df, new_data], ignore_index=True)
-    else:
-        df = new_data
+if not os.path.exists(DATA_FILE):
+    df = pd.DataFrame(columns=["Tanggal", "Username", "Akademik", "Sosial", "Kesehatan", "Lainnya", "Mood", "Aktivitas", "Catatan"])
     df.to_csv(DATA_FILE, index=False)
 
-def klasifikasi_mood(mood_score, aktivitas):
-    negatif = sum(1 for a in aktivitas if any(a in aktivitas_kategori[k]['negatif'] for k in aktivitas_kategori))
-    positif = sum(1 for a in aktivitas if any(a in aktivitas_kategori[k]['positif'] for k in aktivitas_kategori))
-    if mood_score >= 4 and positif > negatif:
-        return "Bahagia"
-    elif mood_score <= 2 and negatif >= positif:
-        return "Sedih"
+# Load data
+mood_data = pd.read_csv(DATA_FILE)
+
+# Mood Labeling dan Penjelasan
+def klasifikasi_mood(skor, aktivitas):
+    aktivitas_negatif = ["Stres tugas", "Kurang interaksi", "Sakit", "Scroll sosmed lama"]
+    aktivitas_positif = ["Olahraga", "Bertemu teman", "Meditasi", "Belajar"]
+    
+    neg = any(act in aktivitas for act in aktivitas_negatif)
+    pos = any(act in aktivitas for act in aktivitas_positif)
+
+    if skor >= 4 and neg:
+        return "Biasa", "Meskipun skor mood tinggi, aktivitasmu cenderung negatif. Bisa jadi kamu mengabaikan stres atau sedang menutupi perasaan."
+    elif skor >= 4:
+        return "Bahagia", "Aktivitas positif mendukung skor tinggi. Terus pertahankan rutinitasmu!"
+    elif skor <= 2 and pos:
+        return "Sedih", "Skor rendah walau ada aktivitas positif. Mungkin kamu sedang kelelahan atau butuh istirahat lebih."
+    elif skor <= 2:
+        return "Sedih", "Skor dan aktivitasmu menunjukkan kondisi kurang baik. Coba luangkan waktu untuk dirimu sendiri."
     else:
-        return "Biasa"
+        return "Biasa", "Skor dan aktivitasmu tidak terlalu kontras, tapi juga tidak terlalu mendukung. Perlu refleksi lebih."
 
-def diagnosis_aktivitas(kategori):
-    diagnosis_dict = {
-        "Bahagia": "🌈 Aktivitasmu tampak positif dan kamu merasa baik. Teruskan dengan kegiatan menyenangkan atau waktu tenang untuk diri sendiri.",
-        "Sedih": "💤 Aktivitasmu tampak berat atau melelahkan. Cobalah istirahat, bicara dengan teman, atau lakukan hal yang menenangkan.",
-        "Biasa": "🧠 Mood kamu cenderung netral hari ini, dan aktivitasmu seimbang. Mungkin hari ini bukan hari terbaik, tapi kamu tetap bertahan. Coba lakukan hal kecil yang membuatmu tersenyum."
-    }
-    return diagnosis_dict.get(kategori, "Tetap semangat!")
+# Saran berdasarkan mood
+saran_dict = {
+    "Bahagia": ["Pertahankan kebiasaan positifmu hari ini.", "Bagikan energimu ke orang lain 😊"],
+    "Biasa": ["Coba evaluasi kegiatanmu hari ini. Apa yang bisa diperbaiki?", "Sesekali penting untuk rehat dan merenung."],
+    "Sedih": ["Luangkan waktu untuk aktivitas menyenangkan.", "Jangan ragu untuk meminta bantuan atau cerita ke teman."]
+}
 
-def kutipan_motivasi():
-    quotes = [
-        "Hidup adalah 10% apa yang terjadi pada kita dan 90% bagaimana kita meresponsnya.",
-        "Setiap hari adalah kesempatan baru untuk menjadi lebih baik.",
-        "Jangan biarkan kemarin menghabiskan terlalu banyak dari hari ini.",
-        "Kadang kamu harus berhenti berpikir terlalu banyak dan cukup rasakan saja.",
-        "Waktu yang sulit tidak bertahan lama, tapi orang yang tangguh bertahan.",
-        "Istirahat juga produktif jika itu membuatmu pulih."
-    ]
-    return random.choice(quotes)
+# Input pengguna
+st.title("🌈 SmartMood Tracker")
+st.markdown("### Catat Mood dan Aktivitasmu Hari Ini")
 
-# ============== Login Page (Auto Register) ==============
-def login_register_page():
-    st.title("🔐 SmartMood Tracker")
-    st.write("Masukkan username dan password. Jika belum punya akun, akan dibuat otomatis.")
+tanggal = st.date_input("Tanggal", datetime.date.today())
+username = st.text_input("Nama Pengguna")
+akademik = st.text_input("Aktivitas Akademik")
+sosial = st.text_input("Aktivitas Sosial")
+kesehatan = st.text_input("Aktivitas Kesehatan")
+lainnya = st.text_input("Aktivitas Lainnya")
+aktivitas = st.text_area("Aktivitas Hari Ini (pisahkan dengan koma)")
+mood = st.slider("Skor Mood (1 = buruk, 5 = sangat baik)", 1, 5, 3)
+catatan = st.text_area("Catatan Tambahan")
 
-    username = st.text_input("Username")
-    password = st.text_input("Password", type="password")
+if st.button("Simpan"):
+    aktivitas_list = [a.strip() for a in aktivitas.split(",") if a.strip()]
+    mood_label, penjelasan = klasifikasi_mood(mood, aktivitas_list)
+    
+    new_data = pd.DataFrame({
+        "Tanggal": [tanggal],
+        "Username": [username],
+        "Akademik": [akademik if akademik else None],
+        "Sosial": [sosial if sosial else None],
+        "Kesehatan": [kesehatan if kesehatan else None],
+        "Lainnya": [lainnya if lainnya else None],
+        "Mood": [mood],
+        "Aktivitas": [", ".join(aktivitas_list)],
+        "Catatan": [catatan if catatan else None]
+    })
 
-    if st.button("Masuk"):
-        users = load_users()
-        hashed = hash_password(password)
+    mood_data = pd.concat([mood_data, new_data], ignore_index=True)
+    mood_data.to_csv(DATA_FILE, index=False)
+    st.success("Data berhasil disimpan!")
 
-        if username in users:
-            if users[username] == hashed:
-                st.session_state.logged_in = True
-                st.session_state.username = username
-                st.success(f"Selamat datang kembali, {username}!")
-                st.rerun()
-            else:
-                st.error("Password salah.")
-        else:
-            users[username] = hashed
-            save_users(users)
-            st.success(f"Akun baru dibuat untuk {username}. Selamat datang!")
-            st.session_state.logged_in = True
-            st.session_state.username = username
-            st.rerun()
+    st.subheader(f"Mood kamu hari ini: {mood_label}")
+    st.info(penjelasan)
 
-# ============== Aplikasi Utama ==============
-def main_app():
-    st.sidebar.title("📋 Menu")
-    menu = st.sidebar.selectbox("Pilih menu", [
-        "Input Mood Harian", "Lihat Grafik Mood", "Lihat Data CSV", "Reset Data", "Tentang", "Logout"])
+    st.markdown("#### Saran Hari Ini:")
+    for saran in saran_dict[mood_label]:
+        st.markdown(f"- {saran}")
 
-    if menu == "Input Mood Harian":
-        st.header("📝 Input Mood & Aktivitas")
-        tanggal = st.date_input("Tanggal", datetime.date.today())
+    st.markdown("📌 *Saran diberikan berdasarkan kombinasi skor mood dan jenis aktivitas.*")
 
-        aktivitas_dipilih = []
-        for kategori, data in aktivitas_kategori.items():
-            pilihan = st.selectbox(f"{kategori}", data['positif'] + data['negatif'], index=None, placeholder="(Pilih satu)")
-            if pilihan:
-                aktivitas_dipilih.append(pilihan)
+# Visualisasi Data
+st.markdown("---")
+st.subheader("📊 Riwayat Mood Harian")
 
-        mood = st.slider("Rating mood hari ini (1-5)", 1, 5, 3)
-        catatan = st.text_area("Catatan harian (opsional):")
+if not mood_data.empty:
+    mood_data["Tanggal"] = pd.to_datetime(mood_data["Tanggal"])
+    data_per_user = mood_data.groupby("Tanggal")["Mood"].mean().reset_index()
 
-        if st.button("✅ Simpan"):
-            if aktivitas_dipilih:
-                simpan_data(tanggal, st.session_state.username, mood, ", ".join(aktivitas_dipilih), catatan)
-                kategori = klasifikasi_mood(mood, aktivitas_dipilih)
-                emoji = "😊" if kategori == "Bahagia" else "😢" if kategori == "Sedih" else "😐"
-                st.success(f"Mood kamu hari ini: {emoji} {kategori}")
-                st.markdown(f"<div style='background-color:#dbeafe;padding:10px;border-radius:5px'><b>{diagnosis_aktivitas(kategori)}</b></div>", unsafe_allow_html=True)
-                st.markdown(f"> 💡 *{kutipan_motivasi()}*")
-                st.caption("\n📌 Saran di atas berdasarkan kombinasi mood score dan jenis aktivitasmu hari ini.")
-            else:
-                st.warning("Pilih minimal satu aktivitas.")
+    fig, ax = plt.subplots()
+    sns.lineplot(data=data_per_user, x="Tanggal", y="Mood", marker="o", ax=ax, color="#4f8df7")
+    ax.set_title("Mood Harian", fontsize=14)
+    ax.set_ylabel("Skor Mood")
+    ax.set_xlabel("Tanggal")
+    ax.set_ylim(0, 5)
+    st.pyplot(fig)
 
-    elif menu == "Lihat Grafik Mood":
-        if os.path.exists(DATA_FILE):
-            df = pd.read_csv(DATA_FILE)
-            df_user = df[df["Username"] == st.session_state.username]
-            df_user["Tanggal"] = pd.to_datetime(df_user["Tanggal"])
-            st.line_chart(df_user.set_index("Tanggal")["Mood"])
-        else:
-            st.warning("Belum ada data.")
-
-    elif menu == "Lihat Data CSV":
-        if os.path.exists(DATA_FILE):
-            df = pd.read_csv(DATA_FILE)
-            st.dataframe(df[df["Username"] == st.session_state.username])
-        else:
-            st.warning("Belum ada data.")
-
-    elif menu == "Reset Data":
-        if os.path.exists(DATA_FILE):
-            os.remove(DATA_FILE)
-            st.success("Data berhasil di-reset.")
-        else:
-            st.info("Data sudah kosong.")
-
-    elif menu == "Tentang":
-        st.subheader("Tentang Aplikasi")
-        st.write("SmartMood Tracker adalah aplikasi untuk mencatat mood harian dan aktivitas, serta memberikan diagnosis berbasis kombinasi data dan kebiasaan harianmu. Didesain agar kamu bisa lebih mengenali diri sendiri dan menjaga keseimbangan hidup.")
-
-    elif menu == "Logout":
-        for key in list(st.session_state.keys()):
-            del st.session_state[key]
-        st.success("Berhasil logout. Sampai jumpa lagi ya, semangat terus! 💪")
-        st.rerun()
-
-# ============== Start Aplikasi ==============
-if not st.session_state.logged_in:
-    login_register_page()
-else:
-    main_app()
+# Tabel data
+st.markdown("---")
+st.subheader("📄 Data Tersimpan")
+st.dataframe(mood_data, use_container_width=True)
