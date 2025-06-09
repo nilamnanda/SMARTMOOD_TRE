@@ -71,34 +71,51 @@ def simpan_data(tanggal, username, mood, aktivitas, catatan):
 def klasifikasi_mood(mood_score, aktivitas):
     negatif = sum(1 for a in aktivitas if any(a in aktivitas_kategori[k]['negatif'] for k in aktivitas_kategori))
     positif = sum(1 for a in aktivitas if any(a in aktivitas_kategori[k]['positif'] for k in aktivitas_kategori))
-    
     if mood_score >= 4 and positif > negatif:
         return "Bahagia"
     elif mood_score <= 2 and negatif >= positif:
         return "Sedih"
-    elif mood_score >= 4 and negatif >= positif:
-        return "Konflik"
     else:
         return "Biasa"
 
-def diagnosis_aktivitas(kategori):
-    diagnosis_dict = {
-        "Bahagia": "🌈 Kamu tampak sangat positif hari ini. Pertahankan semangat ini dan luangkan waktu untuk bersyukur atas hal-hal kecil.",
-        "Sedih": "💤 Hari ini mungkin terasa berat. Tidak apa-apa untuk merasa sedih. Coba istirahat yang cukup dan bicarakan perasaanmu dengan orang yang kamu percaya.",
-        "Biasa": "🧠 Hari ini tampaknya seimbang. Kamu bisa coba sedikit aktivitas menyenangkan seperti jalan kaki atau journaling agar lebih rileks.",
-        "Konflik": "⚠️ Meskipun mood kamu tinggi, beberapa aktivitasmu menunjukkan sinyal stres. Luangkan waktu untuk refleksi, mungkin ada hal yang kamu tekan tanpa sadar."
-    }
-    return diagnosis_dict.get(kategori, "Tetap semangat!")
+def diagnosis_aktivitas(aktivitas):
+    pesan = []
+
+    for a in aktivitas:
+        if a in ["Tugas selesai", "Belajar", "Laprak selesai"]:
+            pesan.append("📘 Kamu produktif hari ini! Luangkan waktu untuk bersantai agar tetap seimbang.")
+        elif a in ["Tugas numpuk", "Menunda Belajar", "Stres tugas"]:
+            pesan.append("📚 Sepertinya tugas membuatmu tertekan. Cobalah buat to-do list sederhana untuk mengurangi beban.")
+        elif a in ["Ngobrol santai", "Main bareng", "Jalan-jalan"]:
+            pesan.append("👫 Interaksi sosial yang hangat bisa jadi penyemangat. Pertahankan hubungan baik ini.")
+        elif a in ["Sendiri aja", "Kurang interaksi", "Canggung banget"]:
+            pesan.append("🌧️ Merasa sendiri itu manusiawi. Mungkin waktunya chat teman lama atau ikut kegiatan baru?")
+        elif a in ["Tidur cukup", "Makan sehat", "Gerak ringan"]:
+            pesan.append("💪 Gaya hidup sehatmu keren! Tubuhmu pasti berterima kasih.")
+        elif a in ["Begadang terus", "Lupa makan", "Kurang gerak", "Sakit"]:
+            pesan.append("⚠️ Jangan abaikan sinyal tubuhmu. Istirahat, makan yang cukup, dan coba peregangan kecil.")
+        elif a in ["Denger musik", "Beres kamar"]:
+            pesan.append("🎶 Aktivitas simpel seperti ini bisa bantu mengatur suasana hati. Good job!")
+        elif a in ["Main terus", "Scroll sosmed lama", "Belanja banyak"]:
+            pesan.append("🌀 Terjebak distraksi memang sering terjadi. Yuk coba atur waktu mainmu lebih bijak.")
+
+    if not pesan:
+        return "✨ Tetap semangat! Apapun harimu, kamu sudah melakukan yang terbaik."
+    else:
+        return "\n".join(random.sample(pesan, min(3, len(pesan))))
 
 def kutipan_motivasi():
     quotes = [
-        "Hidup adalah 10% apa yang terjadi pada kita dan 90% bagaimana kita meresponsnya.",
-        "Setiap hari adalah kesempatan baru untuk menjadi lebih baik.",
-        "Jangan biarkan kemarin menghabiskan terlalu banyak dari hari ini.",
-        "Terkadang istirahat bukan kemunduran, tapi persiapan untuk lompatan.",
-        "Hal besar sering dimulai dari langkah kecil yang konsisten.",
-        "Jangan takut untuk merasa. Itu tandanya kamu hidup dan peduli.",
-        "Kamu sudah berjalan sejauh ini, jangan remehkan kekuatanmu hari ini."
+        "🌤️ Setiap pagi adalah kesempatan untuk memulai ulang dengan lebih baik.",
+        "🌱 Pelan-pelan tidak apa-apa, yang penting kamu tetap berjalan.",
+        "💖 Tidak semua hari harus produktif. Kadang bertahan aja udah hebat.",
+        "🌈 Kamu tidak harus kuat setiap saat, yang penting kamu terus mencoba.",
+        "☕ Tarik napas dalam-dalam. Kamu sudah sejauh ini. Lanjutkan dengan lembut.",
+        "🕊️ Kadang, istirahat adalah bentuk kemajuan yang tersembunyi.",
+        "🌙 Hari ini mungkin berat, tapi malam selalu membawa harapan baru.",
+        "🔥 Kamu punya kekuatan untuk melewati ini, bahkan jika kamu belum merasakannya sekarang.",
+        "📖 Hidup tidak selalu soal hasil, tapi tentang perjalanan dan cerita yang kamu buat.",
+        "🫶 Kamu tidak sendiri. Banyak orang sedang berjuang seperti kamu—dan itu nggak apa-apa."
     ]
     return random.choice(quotes)
 
@@ -153,9 +170,8 @@ def main_app():
             if aktivitas_dipilih:
                 simpan_data(tanggal, st.session_state.username, mood, ", ".join(aktivitas_dipilih), catatan)
                 kategori = klasifikasi_mood(mood, aktivitas_dipilih)
-                emoji = {"Bahagia": "😊", "Sedih": "😢", "Biasa": "😐", "Konflik": "⚠️"}[kategori]
-                st.success(f"Mood kamu hari ini: {emoji} {kategori}")
-                st.markdown(f"<div style='background-color:#f5f5dc;padding:10px;border-radius:5px'><b>{diagnosis_aktivitas(kategori)}</b></div>", unsafe_allow_html=True)
+                st.success(f"Mood kamu hari ini: {'😊' if kategori == 'Bahagia' else '😢' if kategori == 'Sedih' else '😐'} {kategori}")
+                st.markdown(f"<div style='background-color:#f5f5dc;padding:10px;border-radius:5px'><b>{diagnosis_aktivitas(aktivitas_dipilih)}</b></div>", unsafe_allow_html=True)
                 st.markdown(f"> 💡 *{kutipan_motivasi()}*")
             else:
                 st.warning("Pilih minimal satu aktivitas.")
@@ -185,7 +201,7 @@ def main_app():
 
     elif menu == "Tentang":
         st.subheader("Tentang Aplikasi")
-        st.write("SmartMood Tracker adalah aplikasi untuk mencatat mood harian dan aktivitas, serta memberikan diagnosis berdasarkan data dan refleksi personal. Dibuat untuk membantumu memahami perasaan dan kebiasaan harian secara lebih bermakna.")
+        st.write("SmartMood Tracker adalah aplikasi untuk mencatat mood harian dan aktivitas, serta memberikan diagnosis berdasarkan data FitLife. Dibuat untuk membantumu memahami perasaan dan kebiasaan harian secara lebih personal.")
 
     elif menu == "Logout":
         for key in list(st.session_state.keys()):
