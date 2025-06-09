@@ -176,14 +176,59 @@ def main_app():
             else:
                 st.warning("Pilih minimal satu aktivitas.")
 
-    elif menu == "Lihat Grafik Mood":
+       elif menu == "Lihat Grafik Mood":
+        st.subheader("📊 Visualisasi Mood & Aktivitas")
+
         if os.path.exists(DATA_FILE):
             df = pd.read_csv(DATA_FILE)
-            df_user = df[df["Username"] == st.session_state.username]
-            df_user["Tanggal"] = pd.to_datetime(df_user["Tanggal"])
-            st.line_chart(df_user.set_index("Tanggal")["Mood"])
+
+            if not df.empty and {"Tanggal", "Mood", "Username", "Aktivitas"}.issubset(df.columns):
+                df_user = df[df["Username"] == st.session_state.username].copy()
+
+                if not df_user.empty:
+                    # Konversi dan filter
+                    df_user["Tanggal"] = pd.to_datetime(df_user["Tanggal"], errors='coerce')
+                    df_user["Mood"] = pd.to_numeric(df_user["Mood"], errors="coerce")
+                    df_user = df_user.dropna(subset=["Tanggal", "Mood"])
+                    df_user = df_user.sort_values("Tanggal")
+
+                    # Filter rentang tanggal
+                    min_date, max_date = df_user["Tanggal"].min(), df_user["Tanggal"].max()
+                    st.caption(f"Rentang data tersedia: {min_date.date()} - {max_date.date()}")
+                    date_range = st.date_input("Filter tanggal", [min_date.date(), max_date.date()])
+                    if len(date_range) == 2:
+                        df_user = df_user[(df_user["Tanggal"].dt.date >= date_range[0]) & 
+                                          (df_user["Tanggal"].dt.date <= date_range[1])]
+
+                    # Line Chart Mood
+                    st.markdown("#### 📈 Mood Harian")
+                    st.line_chart(df_user.set_index("Tanggal")["Mood"])
+
+                    # Heatmap (pivot by weekday and week number)
+                    st.markdown("#### 🔥 Heatmap Mood (mingguan)")
+                    df_user["Week"] = df_user["Tanggal"].dt.strftime("%Y-%U")
+                    df_user["Day"] = df_user["Tanggal"].dt.strftime("%A")
+                    pivot = df_user.pivot_table(index="Day", columns="Week", values="Mood", aggfunc="mean")
+
+                    # Urutkan hari agar logis
+                    days_order = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+                    pivot = pivot.reindex(days_order)
+
+                    st.dataframe(pivot.style.background_gradient(cmap='YlGnBu', axis=None).format(precision=1))
+
+                    # Aktivitas Populer
+                    st.markdown("#### 🧭 Aktivitas Paling Sering Dipilih")
+                    aktivitas_series = df_user["Aktivitas"].dropna().str.split(", ")
+                    all_aktivitas = [item for sublist in aktivitas_series for item in sublist]
+                    aktivitas_df = pd.Series(all_aktivitas).value_counts().head(10)
+                    st.bar_chart(aktivitas_df)
+                else:
+                    st.info("Belum ada data untuk pengguna ini.")
+            else:
+                st.warning("Data tidak lengkap atau salah format.")
         else:
-            st.warning("Belum ada data.")
+            st.warning("Belum ada file data.")
+
 
     elif menu == "Lihat Data CSV":
         if os.path.exists(DATA_FILE):
