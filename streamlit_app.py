@@ -185,7 +185,7 @@ def main_app():
             else:
                 st.warning("Pilih minimal satu aktivitas.")
 
-       elif menu == "Lihat Grafik Mood":
+    elif menu == "Lihat Grafik Mood":
         if os.path.exists(DATA_FILE):
             df = pd.read_csv(DATA_FILE)
             df_user = df[df["Username"] == st.session_state.username]
@@ -214,7 +214,6 @@ def main_app():
             st.caption("🎨 Warna grafik mewakili mood kamu: Hijau (Bahagia), Merah (Sedih), Pink (Biasa).")
         else:
             st.warning("Belum ada data.")
-
 
     elif menu == "Lihat Data CSV":
         if os.path.exists(DATA_FILE):
