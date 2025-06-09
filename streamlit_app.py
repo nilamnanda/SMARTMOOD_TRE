@@ -78,51 +78,29 @@ def klasifikasi_mood(mood_score, aktivitas):
     else:
         return "Biasa"
 
-def diagnosis_aktivitas(aktivitas):
-    pesan = []
-
-    for a in aktivitas:
-        if a in ["Tugas selesai", "Belajar", "Laprak selesai"]:
-            pesan.append("📘 Kamu produktif hari ini! Luangkan waktu untuk bersantai agar tetap seimbang.")
-        elif a in ["Tugas numpuk", "Menunda Belajar", "Stres tugas"]:
-            pesan.append("📚 Sepertinya tugas membuatmu tertekan. Cobalah buat to-do list sederhana untuk mengurangi beban.")
-        elif a in ["Ngobrol santai", "Main bareng", "Jalan-jalan"]:
-            pesan.append("👫 Interaksi sosial yang hangat bisa jadi penyemangat. Pertahankan hubungan baik ini.")
-        elif a in ["Sendiri aja", "Kurang interaksi", "Canggung banget"]:
-            pesan.append("🌧️ Merasa sendiri itu manusiawi. Mungkin waktunya chat teman lama atau ikut kegiatan baru?")
-        elif a in ["Tidur cukup", "Makan sehat", "Gerak ringan"]:
-            pesan.append("💪 Gaya hidup sehatmu keren! Tubuhmu pasti berterima kasih.")
-        elif a in ["Begadang terus", "Lupa makan", "Kurang gerak", "Sakit"]:
-            pesan.append("⚠️ Jangan abaikan sinyal tubuhmu. Istirahat, makan yang cukup, dan coba peregangan kecil.")
-        elif a in ["Denger musik", "Beres kamar"]:
-            pesan.append("🎶 Aktivitas simpel seperti ini bisa bantu mengatur suasana hati. Good job!")
-        elif a in ["Main terus", "Scroll sosmed lama", "Belanja banyak"]:
-            pesan.append("🌀 Terjebak distraksi memang sering terjadi. Yuk coba atur waktu mainmu lebih bijak.")
-
-    if not pesan:
-        return "✨ Tetap semangat! Apapun harimu, kamu sudah melakukan yang terbaik."
-    else:
-        return "\n".join(random.sample(pesan, min(3, len(pesan))))
+def diagnosis_aktivitas(kategori):
+    diagnosis_dict = {
+        "Bahagia": "🌈 Aktivitasmu tampak positif dan kamu merasa baik. Teruskan dengan kegiatan menyenangkan atau waktu tenang untuk diri sendiri.",
+        "Sedih": "💤 Aktivitasmu tampak berat atau melelahkan. Cobalah istirahat, bicara dengan teman, atau lakukan hal yang menenangkan.",
+        "Biasa": "🧠 Mood kamu cenderung netral hari ini, dan aktivitasmu seimbang. Mungkin hari ini bukan hari terbaik, tapi kamu tetap bertahan. Coba lakukan hal kecil yang membuatmu tersenyum."
+    }
+    return diagnosis_dict.get(kategori, "Tetap semangat!")
 
 def kutipan_motivasi():
     quotes = [
-        "🌤️ Setiap pagi adalah kesempatan untuk memulai ulang dengan lebih baik.",
-        "🌱 Pelan-pelan tidak apa-apa, yang penting kamu tetap berjalan.",
-        "💖 Tidak semua hari harus produktif. Kadang bertahan aja udah hebat.",
-        "🌈 Kamu tidak harus kuat setiap saat, yang penting kamu terus mencoba.",
-        "☕ Tarik napas dalam-dalam. Kamu sudah sejauh ini. Lanjutkan dengan lembut.",
-        "🕊️ Kadang, istirahat adalah bentuk kemajuan yang tersembunyi.",
-        "🌙 Hari ini mungkin berat, tapi malam selalu membawa harapan baru.",
-        "🔥 Kamu punya kekuatan untuk melewati ini, bahkan jika kamu belum merasakannya sekarang.",
-        "📖 Hidup tidak selalu soal hasil, tapi tentang perjalanan dan cerita yang kamu buat.",
-        "🫶 Kamu tidak sendiri. Banyak orang sedang berjuang seperti kamu—dan itu nggak apa-apa."
+        "Hidup adalah 10% apa yang terjadi pada kita dan 90% bagaimana kita meresponsnya.",
+        "Setiap hari adalah kesempatan baru untuk menjadi lebih baik.",
+        "Jangan biarkan kemarin menghabiskan terlalu banyak dari hari ini.",
+        "Kadang kamu harus berhenti berpikir terlalu banyak dan cukup rasakan saja.",
+        "Waktu yang sulit tidak bertahan lama, tapi orang yang tangguh bertahan.",
+        "Istirahat juga produktif jika itu membuatmu pulih."
     ]
     return random.choice(quotes)
 
 # ============== Login Page (Auto Register) ==============
 def login_register_page():
     st.title("🔐 SmartMood Tracker")
-    st.write("Masukkan username dan password untuk login. Jika belum punya akun, akan dibuat otomatis.")
+    st.write("Masukkan username dan password. Jika belum punya akun, akan dibuat otomatis.")
 
     username = st.text_input("Username")
     password = st.text_input("Password", type="password")
@@ -170,9 +148,11 @@ def main_app():
             if aktivitas_dipilih:
                 simpan_data(tanggal, st.session_state.username, mood, ", ".join(aktivitas_dipilih), catatan)
                 kategori = klasifikasi_mood(mood, aktivitas_dipilih)
-                st.success(f"Mood kamu hari ini: {'😊' if kategori == 'Bahagia' else '😢' if kategori == 'Sedih' else '😐'} {kategori}")
-                st.markdown(f"<div style='background-color:#f5f5dc;padding:10px;border-radius:5px'><b>{diagnosis_aktivitas(aktivitas_dipilih)}</b></div>", unsafe_allow_html=True)
+                emoji = "😊" if kategori == "Bahagia" else "😢" if kategori == "Sedih" else "😐"
+                st.success(f"Mood kamu hari ini: {emoji} {kategori}")
+                st.markdown(f"<div style='background-color:#dbeafe;padding:10px;border-radius:5px'><b>{diagnosis_aktivitas(kategori)}</b></div>", unsafe_allow_html=True)
                 st.markdown(f"> 💡 *{kutipan_motivasi()}*")
+                st.caption("\n📌 Saran di atas berdasarkan kombinasi mood score dan jenis aktivitasmu hari ini.")
             else:
                 st.warning("Pilih minimal satu aktivitas.")
 
@@ -201,7 +181,7 @@ def main_app():
 
     elif menu == "Tentang":
         st.subheader("Tentang Aplikasi")
-        st.write("SmartMood Tracker adalah aplikasi untuk mencatat mood harian dan aktivitas, serta memberikan diagnosis berdasarkan data FitLife. Dibuat untuk membantumu memahami perasaan dan kebiasaan harian secara lebih personal.")
+        st.write("SmartMood Tracker adalah aplikasi untuk mencatat mood harian dan aktivitas, serta memberikan diagnosis berbasis kombinasi data dan kebiasaan harianmu. Didesain agar kamu bisa lebih mengenali diri sendiri dan menjaga keseimbangan hidup.")
 
     elif menu == "Logout":
         for key in list(st.session_state.keys()):
