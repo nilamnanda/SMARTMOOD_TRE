@@ -35,8 +35,8 @@ def save_users(users):
 # ============== Mood Activity Categories ==============
 aktivitas_kategori = {
     "Akademik": {
-        "positif": ["Tugas selesai", "Belajar fokus", "Laprak rapi"],
-        "negatif": ["Tugas numpuk", "Belajar ngaret", "Stres tugas"]
+        "positif": ["Tugas selesai", "Belajar", "Laprak selesai"],
+        "negatif": ["Tugas numpuk", "Menunda Belajar", "Stres tugas"]
     },
     "Sosial": {
         "positif": ["Ngobrol santai", "Main bareng", "Jalan-jalan"],
@@ -44,7 +44,7 @@ aktivitas_kategori = {
     },
     "Kesehatan": {
         "positif": ["Tidur cukup", "Makan sehat", "Gerak ringan"],
-        "negatif": ["Begadang terus", "Lupa makan", "Kurang gerak"]
+        "negatif": ["Begadang terus", "Lupa makan", "Kurang gerak" , "Sakit"]
     },
     "Lainnya": {
         "positif": ["Denger musik", "Beres kamar"],
@@ -111,7 +111,7 @@ def login_register_page():
                 st.session_state.logged_in = True
                 st.session_state.username = username
                 st.success(f"Selamat datang kembali, {username}!")
-                st.experimental_rerun()
+                st.rerun()
             else:
                 st.error("Password salah.")
         else:
@@ -120,7 +120,7 @@ def login_register_page():
             st.success(f"Akun baru dibuat untuk {username}. Selamat datang!")
             st.session_state.logged_in = True
             st.session_state.username = username
-            st.experimental_rerun()
+            st.rerun()
 
 # ============== Aplikasi Utama ==============
 def main_app():
@@ -179,10 +179,10 @@ def main_app():
         st.write("SmartMood Tracker adalah aplikasi untuk mencatat mood harian dan aktivitas, serta memberikan diagnosis berdasarkan data FitLife. Dibuat untuk membantumu memahami perasaan dan kebiasaan harian secara lebih personal.")
 
     elif menu == "Logout":
-        st.session_state.logged_in = False
-        st.session_state.username = ""
-        st.success("Berhasil logout.")
-        st.experimental_rerun()
+        for key in list(st.session_state.keys()):
+            del st.session_state[key]
+        st.success("Berhasil logout. Sampai jumpa lagi ya, semangat terus! 💪")
+        st.rerun()
 
 # ============== Start Aplikasi ==============
 if not st.session_state.logged_in:
