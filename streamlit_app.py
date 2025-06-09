@@ -25,10 +25,7 @@ def hash_password(password):
 def load_users():
     if os.path.exists(USER_FILE):
         with open(USER_FILE, "r") as f:
-            try:
-                return json.load(f)
-            except json.JSONDecodeError:
-                return {}
+            return json.load(f)
     return {}
 
 def save_users(users):
@@ -85,7 +82,6 @@ def klasifikasi_mood(mood_score, aktivitas):
 
 def diagnosis_aktivitas(aktivitas):
     pesan = []
-
     for a in aktivitas:
         if a in ["Tugas selesai", "Belajar", "Laprak selesai"]:
             pesan.append("📘 Kamu produktif hari ini! Luangkan waktu untuk bersantai agar tetap seimbang.")
@@ -103,11 +99,7 @@ def diagnosis_aktivitas(aktivitas):
             pesan.append("🎶 Aktivitas simpel seperti ini bisa bantu mengatur suasana hati. Good job!")
         elif a in ["Main terus", "Scroll sosmed lama", "Belanja banyak"]:
             pesan.append("🌀 Terjebak distraksi memang sering terjadi. Yuk coba atur waktu mainmu lebih bijak.")
-
-    if not pesan:
-        return "✨ Tetap semangat! Apapun harimu, kamu sudah melakukan yang terbaik."
-    else:
-        return "\n".join(random.sample(pesan, min(3, len(pesan))))
+    return "\n".join(random.sample(pesan, min(3, len(pesan)))) if pesan else "✨ Tetap semangat! Apapun harimu, kamu sudah melakukan yang terbaik."
 
 def kutipan_motivasi():
     quotes = [
@@ -160,8 +152,6 @@ def main_app():
 
     if menu == "Input Mood Harian":
         st.header("📝 Input Mood & Aktivitas")
-        st.caption("🎯 Penilaian mood berdasarkan skala 1-5, dengan mempertimbangkan kombinasi aktivitas harian yang kamu lakukan.")
-
         tanggal = st.date_input("Tanggal", datetime.date.today())
         aktivitas_dipilih = []
 
@@ -178,7 +168,7 @@ def main_app():
             if aktivitas_dipilih:
                 simpan_data(tanggal, st.session_state.username, mood, ", ".join(aktivitas_dipilih), catatan)
                 kategori = klasifikasi_mood(mood, aktivitas_dipilih)
-                warna = "#d5f5e3" if kategori == "Bahagia" else "#f9e79f" if kategori == "Biasa" else "#f5b7b1"
+                warna = "#eecbff"
                 st.markdown(f"""
                     <div style='background-color:{warna};padding:10px;border-radius:10px;'>
                     <b>Mood kamu hari ini: {'😊' if kategori == 'Bahagia' else '😢' if kategori == 'Sedih' else '😐'} {kategori}</b><br><br>
@@ -196,7 +186,7 @@ def main_app():
             df_user = df_user.sort_values("Tanggal")
 
             st.subheader("📈 Grafik Mood Harian Berdasarkan Klasifikasi")
-            warna_map = {"Bahagia": "#58D68D", "Biasa": "#F4D03F", "Sedih": "#EC7063"}
+            warna_map = {"Bahagia": "#FFD700", "Biasa": "#F48FB1", "Sedih": "#EF5350"}
             df_user["Warna"] = df_user["Klasifikasi"].map(warna_map)
 
             import altair as alt
@@ -226,7 +216,7 @@ def main_app():
 
     elif menu == "Tentang":
         st.subheader("Tentang Aplikasi")
-        st.write("SmartMood Tracker membantumu mencatat suasana hati dan aktivitas harian, serta memberikan refleksi agar kamu lebih memahami dirimu setiap hari.")
+        st.write("SmartMood Tracker adalah aplikasi untuk mencatat mood harian dan aktivitas, serta memberikan diagnosis berdasarkan aktivitas kamu. Dibuat untuk membantumu memahami perasaan dan kebiasaan harian secara lebih personal.")
 
     elif menu == "Logout":
         for key in list(st.session_state.keys()):
