@@ -5,6 +5,7 @@ import os
 import random
 import json
 import hashlib
+import plotly.express as px
 
 # ================== Konfigurasi Halaman ==================
 st.set_page_config(page_title="SmartMood Tracker", layout="wide")
@@ -179,15 +180,27 @@ def main_app():
     elif menu == "Lihat Grafik Mood":
         if os.path.exists(DATA_FILE):
             df = pd.read_csv(DATA_FILE)
+            df["Aktivitas"] = df["Aktivitas"].fillna("").apply(lambda x: ", ".join([a.strip() for a in x.split(",")]))
             df_user = df[df["Username"] == st.session_state.username]
             df_user["Tanggal"] = pd.to_datetime(df_user["Tanggal"])
-            st.line_chart(df_user.set_index("Tanggal")["Mood"])
+            fig = px.line(
+                df_user,
+                x="Tanggal",
+                y="Mood",
+                markers=True,
+                title="Tren Mood Harian Kamu",
+                labels={"Mood": "Skor Mood", "Tanggal": "Tanggal"},
+                color_discrete_sequence=["#636EFA"]
+            )
+            fig.update_layout(yaxis=dict(range=[1, 5], dtick=1))
+            st.plotly_chart(fig, use_container_width=True)
         else:
             st.warning("Belum ada data.")
 
     elif menu == "Lihat Data CSV":
         if os.path.exists(DATA_FILE):
             df = pd.read_csv(DATA_FILE)
+            df["Aktivitas"] = df["Aktivitas"].fillna("").apply(lambda x: ", ".join([a.strip() for a in x.split(",")]))
             st.dataframe(df[df["Username"] == st.session_state.username])
         else:
             st.warning("Belum ada data.")
