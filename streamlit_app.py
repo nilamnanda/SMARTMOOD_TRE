@@ -5,6 +5,9 @@ import os
 import random
 import json
 import hashlib
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+from matplotlib.patches import Patch
 
 # ================== Konfigurasi Halaman ==================
 st.set_page_config(page_title="SmartMood Tracker", layout="wide")
@@ -138,7 +141,7 @@ def login_register_page():
                 st.session_state.logged_in = True
                 st.session_state.username = username
                 st.success(f"Selamat datang kembali, {username}!")
-                st.rerun()
+                st.experimental_rerun()
             else:
                 st.error("Password salah.")
         else:
@@ -147,7 +150,7 @@ def login_register_page():
             st.success(f"Akun baru dibuat untuk {username}. Selamat datang!")
             st.session_state.logged_in = True
             st.session_state.username = username
-            st.rerun()
+            st.experimental_rerun()
 
 # ============== Aplikasi Utama ==============
 def main_app():
@@ -173,7 +176,7 @@ def main_app():
 
         if st.button("✅ Simpan"):
             if aktivitas_dipilih:
-                simpan_data(tanggal, st.session_state.username, mood, ", ".join(aktivitas_dipilih), catatan)
+                simpan_data(tanggal, st.session_state.username, mood, aktivitas_dipilih, catatan)
                 kategori = klasifikasi_mood(mood, aktivitas_dipilih)
                 warna = "#eecbff"
                 st.markdown(f"""
@@ -197,20 +200,26 @@ def main_app():
             warna_map = {"Bahagia": "#88e36b", "Biasa": "#ffb1e1", "Sedih": "#f87171"}
             df_user["Warna"] = df_user["Klasifikasi"].map(warna_map)
 
-            import altair as alt
+            fig, ax = plt.subplots(figsize=(10, 4))
+            ax.bar(df_user["Tanggal"], df_user["Mood"], color=df_user["Warna"], width=0.6)
 
-            chart = alt.Chart(df_user).mark_bar().encode(
-                x=alt.X("Tanggal:T", title="Tanggal"),
-                y=alt.Y("Mood:Q", scale=alt.Scale(domain=[0, 5]), title="Skor Mood"),
-                color=alt.Color("Klasifikasi:N", scale=alt.Scale(domain=list(warna_map.keys()), range=list(warna_map.values()))),
-                tooltip=["Tanggal:T", "Mood:Q", "Klasifikasi:N", "Aktivitas:N"]
-            ).properties(
-                width="container",
-                height=400,
-                title="📅 Mood Tracker Berwarna Berdasarkan Klasifikasi"
-            )
+            ax.set_ylim(0, 5)
+            ax.set_xlabel("Tanggal")
+            ax.set_ylabel("Skor Mood")
+            ax.set_title("📅 Mood Tracker Berwarna Berdasarkan Klasifikasi")
 
-            st.altair_chart(chart, use_container_width=True)
+            # Format tanggal di sumbu x
+            ax.xaxis.set_major_locator(mdates.DayLocator(interval=1))
+            ax.xaxis.set_major_formatter(mdates.DateFormatter('%d-%m-%Y'))
+            plt.xticks(rotation=45, ha='right')
+
+            # Tambahkan grid dan legend manual
+            ax.grid(axis='y', linestyle='--', alpha=0.7)
+
+            legend_elements = [Patch(facecolor=warna_map[k], label=k) for k in warna_map]
+            ax.legend(handles=legend_elements, title="Klasifikasi Mood")
+
+            st.pyplot(fig)
             st.caption("🎨 Warna grafik mewakili mood kamu: Hijau (Bahagia), Merah (Sedih), Pink (Biasa).")
         else:
             st.warning("Belum ada data.")
@@ -231,13 +240,17 @@ def main_app():
 
     elif menu == "Tentang":
         st.subheader("Tentang Aplikasi")
-        st.write("SmartMood Tracker adalah aplikasi untuk mencatat mood harian dan aktivitas, serta memberikan diagnosis berdasarkan aktivitas kamu. Dibuat untuk membantumu memahami perasaan dan kebiasaan harian secara lebih personal.")
+        st.write(
+            "SmartMood Tracker adalah aplikasi untuk mencatat mood harian dan aktivitas, "
+            "serta memberikan diagnosis berdasarkan aktivitas kamu. Dibuat untuk membantumu "
+            "memahami perasaan dan kebiasaan harian secara lebih personal."
+        )
 
     elif menu == "Logout":
         for key in list(st.session_state.keys()):
             del st.session_state[key]
         st.success("Berhasil logout. Sampai jumpa lagi ya, semangat terus! 💪")
-        st.rerun()
+        st.experimental_rerun()
 
 # ============== Start Aplikasi ==============
 if not st.session_state.logged_in:
