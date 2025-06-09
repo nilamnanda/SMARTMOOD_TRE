@@ -185,27 +185,36 @@ def main_app():
             else:
                 st.warning("Pilih minimal satu aktivitas.")
 
-    elif menu == "Lihat Grafik Mood":
+       elif menu == "Lihat Grafik Mood":
         if os.path.exists(DATA_FILE):
             df = pd.read_csv(DATA_FILE)
             df_user = df[df["Username"] == st.session_state.username]
             df_user["Tanggal"] = pd.to_datetime(df_user["Tanggal"])
             df_user = df_user.sort_values("Tanggal")
 
-            st.subheader("📈 Grafik Mood Harian Berdasarkan Klasifikasi")
-            warna_map = {"Bahagia": "#FFD700", "Biasa": "#B0BEC5", "Sedih": "#EF5350"}
+            st.subheader("📊 Visualisasi Mood Harian")
+
+            warna_map = {"Bahagia": "#88e36b", "Biasa": "#ffb1e1", "Sedih": "#f87171"}
             df_user["Warna"] = df_user["Klasifikasi"].map(warna_map)
 
             import altair as alt
-            chart = alt.Chart(df_user).mark_circle(size=100).encode(
-                x='Tanggal:T',
-                y='Mood:Q',
-                color=alt.Color('Klasifikasi:N', scale=alt.Scale(domain=list(warna_map.keys()), range=list(warna_map.values()))),
-                tooltip=['Tanggal:T', 'Mood:Q', 'Klasifikasi:N', 'Aktivitas:N']
-            ).properties(height=400)
+
+            chart = alt.Chart(df_user).mark_bar().encode(
+                x=alt.X("Tanggal:T", title="Tanggal"),
+                y=alt.Y("Mood:Q", scale=alt.Scale(domain=[0, 5]), title="Skor Mood"),
+                color=alt.Color("Klasifikasi:N", scale=alt.Scale(domain=list(warna_map.keys()), range=list(warna_map.values()))),
+                tooltip=["Tanggal:T", "Mood:Q", "Klasifikasi:N", "Aktivitas:N"]
+            ).properties(
+                width="container",
+                height=400,
+                title="📅 Mood Tracker Berwarna Berdasarkan Klasifikasi"
+            )
+
             st.altair_chart(chart, use_container_width=True)
+            st.caption("🎨 Warna grafik mewakili mood kamu: Hijau (Bahagia), Merah (Sedih), Pink (Biasa).")
         else:
             st.warning("Belum ada data.")
+
 
     elif menu == "Lihat Data CSV":
         if os.path.exists(DATA_FILE):
