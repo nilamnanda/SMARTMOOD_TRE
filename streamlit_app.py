@@ -54,12 +54,14 @@ aktivitas_kategori = {
 
 # ============== Fungsi Pendukung ==============
 def simpan_data(tanggal, username, mood, aktivitas, catatan):
+    kategori = klasifikasi_mood(mood, aktivitas)
     new_data = pd.DataFrame([{
         "Tanggal": tanggal,
         "Username": username,
         "Mood": mood,
         "Aktivitas": aktivitas,
-        "Catatan": catatan
+        "Catatan": catatan,
+        "Klasifikasi": kategori
     }])
     if os.path.exists(DATA_FILE):
         df = pd.read_csv(DATA_FILE)
@@ -173,7 +175,7 @@ def main_app():
             if aktivitas_dipilih:
                 simpan_data(tanggal, st.session_state.username, mood, ", ".join(aktivitas_dipilih), catatan)
                 kategori = klasifikasi_mood(mood, aktivitas_dipilih)
-                warna = "#eecbff"  # pink-ungu
+                warna = "#eecbff"
                 st.markdown(f"""
                     <div style='background-color:{warna};padding:10px;border-radius:10px;'>
                     <b>Mood kamu hari ini: {'😊' if kategori == 'Bahagia' else '😢' if kategori == 'Sedih' else '😐'} {kategori}</b><br><br>
@@ -189,7 +191,19 @@ def main_app():
             df_user = df[df["Username"] == st.session_state.username]
             df_user["Tanggal"] = pd.to_datetime(df_user["Tanggal"])
             df_user = df_user.sort_values("Tanggal")
-            st.line_chart(df_user.set_index("Tanggal")["Mood"])
+
+            st.subheader("📈 Grafik Mood Harian Berdasarkan Klasifikasi")
+            warna_map = {"Bahagia": "#FFD700", "Biasa": "#B0BEC5", "Sedih": "#EF5350"}
+            df_user["Warna"] = df_user["Klasifikasi"].map(warna_map)
+
+            import altair as alt
+            chart = alt.Chart(df_user).mark_circle(size=100).encode(
+                x='Tanggal:T',
+                y='Mood:Q',
+                color=alt.Color('Klasifikasi:N', scale=alt.Scale(domain=list(warna_map.keys()), range=list(warna_map.values()))),
+                tooltip=['Tanggal:T', 'Mood:Q', 'Klasifikasi:N', 'Aktivitas:N']
+            ).properties(height=400)
+            st.altair_chart(chart, use_container_width=True)
         else:
             st.warning("Belum ada data.")
 
