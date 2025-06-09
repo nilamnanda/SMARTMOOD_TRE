@@ -5,6 +5,7 @@ import os
 import random
 import json
 import hashlib
+import plotly.express as px
 
 # ================== Konfigurasi Halaman ==================
 st.set_page_config(page_title="SmartMood Tracker", layout="wide")
@@ -82,7 +83,6 @@ def klasifikasi_mood(mood_score, aktivitas):
 
 def diagnosis_aktivitas(aktivitas):
     pesan = []
-
     for a in aktivitas:
         if a in ["Tugas selesai", "Belajar", "Laprak selesai"]:
             pesan.append("📘 Kamu produktif hari ini! Luangkan waktu untuk bersantai agar tetap seimbang.")
@@ -121,7 +121,7 @@ def kutipan_motivasi():
     ]
     return random.choice(quotes)
 
-# ============== Login Page (Auto Register) ==============
+# ============== Login Page ==============
 def login_register_page():
     st.title("🔐 SmartMood Tracker")
     st.write("Masukkan username dan password untuk login. Jika belum punya akun, akan dibuat otomatis.")
@@ -149,7 +149,7 @@ def login_register_page():
             st.session_state.username = username
             st.rerun()
 
-# ============== Aplikasi Utama ==============
+# ============== Main App ==============
 def main_app():
     st.sidebar.title("📋 Menu")
     menu = st.sidebar.selectbox("Pilih menu", [
@@ -188,22 +188,62 @@ def main_app():
     elif menu == "Lihat Grafik Mood":
         if os.path.exists(DATA_FILE):
             df = pd.read_csv(DATA_FILE)
-            df_user = df[df["Username"] == st.session_state.username]
-            df_user["Tanggal"] = pd.to_datetime(df_user["Tanggal"])
-            df_user = df_user.sort_values("Tanggal")
+            df["Username"] = df["Username"].astype(str)
+            df["Mood"] = pd.to_numeric(df["Mood"], errors="coerce")
+            df["Tanggal"] = pd.to_datetime(df["Tanggal"], errors="coerce")
+            df["Klasifikasi"] = df["Klasifikasi"].fillna("Tidak Diketahui")
+            df["Aktivitas"] = df["Aktivitas"].fillna("Tidak diketahui")
 
-            st.subheader("📈 Grafik Mood Harian Berdasarkan Klasifikasi")
-            warna_map = {"Bahagia": "#FFD700", "Biasa": "#B0BEC5", "Sedih": "#EF5350"}
-            df_user["Warna"] = df_user["Klasifikasi"].map(warna_map)
+            df_user = df[df["Username"] == st.session_state.username].dropna(subset=["Mood", "Tanggal"])
 
-            import altair as alt
-            chart = alt.Chart(df_user).mark_circle(size=100).encode(
-                x='Tanggal:T',
-                y='Mood:Q',
-                color=alt.Color('Klasifikasi:N', scale=alt.Scale(domain=list(warna_map.keys()), range=list(warna_map.values()))),
-                tooltip=['Tanggal:T', 'Mood:Q', 'Klasifikasi:N', 'Aktivitas:N']
-            ).properties(height=400)
-            st.altair_chart(chart, use_container_width=True)
+            if not df_user.empty:
+                df_user = df_user.sort_values("Tanggal")
+
+                fig = px.line(
+                    df_user,
+                    x="Tanggal",
+                    y="Mood",
+                    markers=True,
+                    color="Klasifikasi",
+                    color_discrete_map={
+                        "Bahagia": "#FFD700",
+                        "Biasa": "#B0BEC5",
+                        "Sedih": "#EF5350"
+                    },
+                    title="📊 Grafik Mood Harian Berdasarkan Klasifikasi",
+                )
+
+                for _, row in df_user.iterrows():
+                    aktivitas = row["Aktivitas"]
+                    mood = row["Mood"]
+                    klasifikasi = row["Klasifikasi"]
+                    aktivitas_list = [a.strip().lower() for a in aktivitas.split(",")]
+
+                    if mood <= 2 and any(a in ["olahraga", "bertemu teman", "makan enak", "jalan-jalan"] for a in aktivitas_list):
+                        teks = f"😟 Sedih padahal aktivitasmu positif. Ada apa hari ini?"
+                    elif mood >= 4 and any(a in ["rebahan", "menangis", "tidur seharian", "marah"] for a in aktivitas_list):
+                        teks = f"🙂 Mood tinggi, tapi aktivitasmu negatif. Tetap jaga kestabilan ya."
+                    else:
+                        if klasifikasi == "Bahagia":
+                            teks = "😊 Kamu terlihat bahagia. Pertahankan semangatnya!"
+                        elif klasifikasi == "Biasa":
+                            teks = "😐 Mood-mu netral. Coba cari momen kecil yang menyenangkan hari ini!"
+                        else:
+                            teks = "😔 Sedih hari ini ya? Semangat, besok bisa lebih baik."
+
+                    fig.add_annotation(
+                        x=row["Tanggal"],
+                        y=row["Mood"],
+                        text=teks,
+                        showarrow=True,
+                        arrowhead=1,
+                        font=dict(size=10),
+                        yshift=10
+                    )
+
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.info("Belum ada data mood yang valid untuk ditampilkan.")
         else:
             st.warning("Belum ada data.")
 
