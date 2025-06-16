@@ -183,26 +183,29 @@ def main_app():
         mood = st.slider("Rating mood hari ini (1-5)", 1, 5, 3)
         catatan = st.text_area("Catatan harian (opsional):")
 
-        if st.button("✅ Simpan"):
-            if aktivitas_dipilih:
-                simpan_data(tanggal, st.session_state.username, mood, aktivitas_dipilih, catatan)
-                kategori = klasifikasi_mood(mood, aktivitas_dipilih)
-                warna = "#eecbff"
-                st.markdown(f"""
-                    <div style='background-color:{warna};padding:10px;border-radius:10px;'>
-                    <b>Mood kamu hari ini: {'😊' if kategori == 'Bahagia' else '😢' if kategori == 'Sedih' else '😐'} {kategori}</b><br><br>
-                    {diagnosis_aktivitas(aktivitas_dipilih)}</div>
-                    """, unsafe_allow_html=True)
-                # Penilaian level mood
-            if mood <= 2:
-                    saran_level = "buruk"
-            elif mood == 3:
-                    saran_level = "cukup"
-            else:
-                    saran_level = "baik"
-                    
-                    # Tampilkan kutipan motivasi sesuai level
-                st.markdown(f"> 💡 {kutipan_motivasi(saran_level)}")
+     if st.button("✅ Simpan"):
+    if aktivitas_dipilih:
+        simpan_data(tanggal, st.session_state.username, mood, aktivitas_dipilih, catatan)
+        kategori = klasifikasi_mood(mood, aktivitas_dipilih)
+        warna = "#eecbff"
+        st.markdown(f"""
+            <div style='background-color:{warna};padding:10px;border-radius:10px;'>
+            <b>Mood kamu hari ini: {'😊' if kategori == 'Bahagia' else '😢' if kategori == 'Sedih' else '😐'} {kategori}</b><br><br>
+            {diagnosis_aktivitas(aktivitas_dipilih)}</div>
+            """, unsafe_allow_html=True)
+
+        # Penilaian level mood
+        if mood <= 2:
+            saran_level = "buruk"
+        elif mood == 3:
+            saran_level = "cukup"
+        else:
+            saran_level = "baik"
+
+        # Tampilkan kutipan motivasi sesuai level
+        st.markdown(f"> 💡 {kutipan_motivasi(saran_level)}")
+
+           
 
             else:
                 st.warning("Pilih minimal satu aktivitas.")
