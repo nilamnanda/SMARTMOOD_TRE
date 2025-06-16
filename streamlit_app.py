@@ -1,4 +1,4 @@
-import streamlit as st
+saya mau membuat presentasi tentang penjelasan dan penggunaan apa saja yang ada di program saya. ini prigram satya. import streamlit as st
 import pandas as pd
 import datetime
 import os
@@ -19,7 +19,7 @@ if 'username' not in st.session_state:
     st.session_state.username = ""
 
 DATA_FILE = "smartmood_data.csv"
-UUSER_FILE = "users.csv"
+USER_FILE = "users.json"
 
 # ================== Utility Functions ==================
 def hash_password(password):
@@ -34,8 +34,6 @@ def load_users():
 def save_users(users):
     with open(USER_FILE, "w") as f:
         json.dump(users, f)
-
-
 
 # ============== Mood Activity Categories ==============
 aktivitas_kategori = {
