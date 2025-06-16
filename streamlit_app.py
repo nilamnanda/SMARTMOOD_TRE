@@ -1,4 +1,4 @@
-saya mau membuat presentasi tentang penjelasan dan penggunaan apa saja yang ada di program saya. ini prigram satya. import streamlit as st
+import streamlit as st
 import pandas as pd
 import datetime
 import os
