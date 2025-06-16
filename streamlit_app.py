@@ -194,15 +194,15 @@ def main_app():
                     {diagnosis_aktivitas(aktivitas_dipilih)}</div>
                     """, unsafe_allow_html=True)
                 # Penilaian level mood
-if mood <= 2:
-    saran_level = "buruk"
-elif mood == 3:
-    saran_level = "cukup"
-else:
-    saran_level = "baik"
-
-# Tampilkan kutipan motivasi sesuai level
-st.markdown(f"> 💡 {kutipan_motivasi(saran_level)}")
+                    if mood <= 2:
+                        saran_level = "buruk"
+                    elif mood == 3:
+                        saran_level = "cukup"
+                    else:
+                        saran_level = "baik"
+                    
+                    # Tampilkan kutipan motivasi sesuai level
+                    st.markdown(f"> 💡 {kutipan_motivasi(saran_level)}")
 
             else:
                 st.warning("Pilih minimal satu aktivitas.")
