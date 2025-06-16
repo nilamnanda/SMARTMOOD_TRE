@@ -2,31 +2,26 @@ import streamlit as st
 import pandas as pd
 import datetime
 import os
+import random
 import json
 import hashlib
-import random
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from matplotlib.patches import Patch
 
-# ========== Konfigurasi Halaman ==========
+# ================== Konfigurasi Halaman ==================
 st.set_page_config(page_title="SmartMood Tracker", layout="wide")
 
-# ========== File Penyimpanan ==========
+# ================== Session State ==================
+if 'logged_in' not in st.session_state:
+    st.session_state.logged_in = False
+if 'username' not in st.session_state:
+    st.session_state.username = ""
+
 DATA_FILE = "smartmood_data.csv"
 USER_FILE = "users.json"
 
-# ========== State Session ==========
-# ========== State Session ==========
-if "logged_in" not in st.session_state:
-    st.session_state.logged_in = False
-if "username" not in st.session_state:
-    st.session_state.username = ""
-if "show_register" not in st.session_state:
-    st.session_state.show_register = False
-
-
-# ========== Utility ==========
+# ================== Utility Functions ==================
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
@@ -40,7 +35,7 @@ def save_users(users):
     with open(USER_FILE, "w") as f:
         json.dump(users, f)
 
-# ========== Data Mood & Aktivitas ==========
+# ============== Mood Activity Categories ==============
 aktivitas_kategori = {
     "Akademik": {
         "positif": ["Tugas selesai", "Belajar", "Laprak selesai"],
@@ -60,6 +55,7 @@ aktivitas_kategori = {
     }
 }
 
+# ============== Fungsi Pendukung ==============
 def simpan_data(tanggal, username, mood, aktivitas, catatan):
     kategori = klasifikasi_mood(mood, aktivitas)
     new_data = pd.DataFrame([{
@@ -87,8 +83,9 @@ def klasifikasi_mood(mood_score, aktivitas):
     else:
         return "Biasa"
 
-def diagnosis_aktivitas(aktivitas, kategori="Biasa"):
+def diagnosis_aktivitas(aktivitas):
     pesan = []
+
     for a in aktivitas:
         if a in ["Tugas selesai", "Belajar", "Laprak selesai"]:
             pesan.append("📘 Kamu produktif hari ini! Luangkan waktu untuk bersantai agar tetap seimbang.")
@@ -107,18 +104,10 @@ def diagnosis_aktivitas(aktivitas, kategori="Biasa"):
         elif a in ["Main terus", "Scroll sosmed lama", "Belanja banyak"]:
             pesan.append("🌀 Terjebak distraksi memang sering terjadi. Yuk coba atur waktu mainmu lebih bijak.")
 
-    motivasi = {
-        "Bahagia": "🌞 Senang melihat harimu menyenangkan!",
-        "Sedih": "🌱 Kamu tidak sendiri—yang penting kamu mencoba.",
-        "Biasa": "🌤 Harimu sedang biasa — tetap konsisten ya!"
-    }
-
     if not pesan:
-        pesan_final = "✨ Tetap semangat! Apapun harimu, kamu sudah melakukan yang terbaik."
+        return "✨ Tetap semangat! Apapun harimu, kamu sudah melakukan yang terbaik."
     else:
-        pesan_final = "\n".join(random.sample(pesan, min(3, len(pesan))))
-
-    return f"{pesan_final}\n\n{motivasi.get(kategori, '')}"
+        return "\n".join(random.sample(pesan, min(3, len(pesan))))
 
 def kutipan_motivasi():
     quotes = [
@@ -135,41 +124,35 @@ def kutipan_motivasi():
     ]
     return random.choice(quotes)
 
-# ========== Halaman Login & Registrasi ==========
+# ============== Login/Register Page ==============
 def login_register_page():
-    st.title("🔐 Login ke SmartMood")
-    username = st.text_input("Username")
-    password = st.text_input("Password", type="password")
+    st.title("🔐 SmartMood Tracker")
+    st.write("Masukkan username dan password untuk login. Jika belum punya akun, akan dibuat otomatis.")
 
-    if st.button("Login"):
+    username = st.text_input("Username", key="login_username")
+    password = st.text_input("Password", type="password", key="login_password")
+
+    if st.button("Masuk", key="login_button"):
         users = load_users()
-        if username in users and users[username] == hash_password(password):
+        hashed = hash_password(password)
+
+        if username in users:
+            if users[username] == hashed:
+                st.session_state.logged_in = True
+                st.session_state.username = username
+                st.success(f"Selamat datang kembali, {username}!")
+                st.experimental_rerun()
+            else:
+                st.error("Password salah.")
+        else:
+            users[username] = hashed
+            save_users(users)
+            st.success(f"Akun baru dibuat untuk {username}. Selamat datang!")
             st.session_state.logged_in = True
             st.session_state.username = username
             st.experimental_rerun()
-        else:
-            st.error("Username atau password salah.")
 
-    st.markdown("Belum punya akun?")
-    if st.button("Registrasi"):
-        st.session_state.show_register = True
-
-    if st.session_state.get("show_register"):
-        st.subheader("📝 Registrasi Pengguna Baru")
-        new_username = st.text_input("Buat Username")
-        new_password = st.text_input("Buat Password", type="password")
-
-        if st.button("Daftar"):
-            users = load_users()
-            if new_username in users:
-                st.warning("Username sudah digunakan.")
-            else:
-                users[new_username] = hash_password(new_password)
-                save_users(users)
-                st.success("Registrasi berhasil! Silakan login.")
-                st.session_state.show_register = False
-
-# ========== Halaman Utama ==========
+# ============== Main App ==============
 def main_app():
     st.sidebar.title("📋 Menu")
     menu = st.sidebar.selectbox("Pilih menu", [
@@ -177,6 +160,8 @@ def main_app():
 
     if menu == "Input Mood Harian":
         st.header("📝 Input Mood & Aktivitas")
+        st.caption("🎯 Penilaian mood berdasarkan skala 1-5, dengan mempertimbangkan kombinasi aktivitas harian yang kamu lakukan.")
+
         tanggal = st.date_input("Tanggal", datetime.date.today())
         aktivitas_dipilih = []
 
@@ -197,7 +182,7 @@ def main_app():
                 st.markdown(f"""
                     <div style='background-color:{warna};padding:10px;border-radius:10px;'>
                     <b>Mood kamu hari ini: {'😊' if kategori == 'Bahagia' else '😢' if kategori == 'Sedih' else '😐'} {kategori}</b><br><br>
-                    {diagnosis_aktivitas(aktivitas_dipilih, kategori)}</div>
+                    {diagnosis_aktivitas(aktivitas_dipilih)}</div>
                     """, unsafe_allow_html=True)
                 st.markdown(f"> 💡 {kutipan_motivasi()}")
             else:
@@ -217,15 +202,19 @@ def main_app():
 
             fig, ax = plt.subplots(figsize=(10, 4))
             ax.bar(df_user["Tanggal"], df_user["Mood"], color=df_user["Warna"], width=0.6)
+
             ax.set_ylim(0, 5)
             ax.set_xlabel("Tanggal")
             ax.set_ylabel("Skor Mood")
             ax.set_title("📅 Mood Tracker Berwarna Berdasarkan Klasifikasi")
+
             ax.xaxis.set_major_locator(mdates.DayLocator(interval=1))
-            ax.xaxis.set_major_formatter(mdates.DateFormatter('%d-%m'))
+            ax.xaxis.set_major_formatter(mdates.DateFormatter('%d-%m-%Y'))
             plt.xticks(rotation=45, ha='right')
+
             ax.grid(axis='y', linestyle='--', alpha=0.7)
-            ax.legend(handles=[Patch(facecolor=warna_map[k], label=k) for k in warna_map], title="Klasifikasi Mood")
+            legend_elements = [Patch(facecolor=warna_map[k], label=k) for k in warna_map]
+            ax.legend(handles=legend_elements, title="Klasifikasi Mood")
 
             st.pyplot(fig)
             st.caption("🎨 Warna grafik mewakili mood kamu: Hijau (Bahagia), Merah (Sedih), Pink (Biasa).")
@@ -254,25 +243,14 @@ def main_app():
             "memahami perasaan dan kebiasaan harian secara lebih personal."
         )
 
-menu = st.sidebar.selectbox("Menu", ["Login", "Register", "Logout"])
+    elif menu == "Logout":
+        for key in list(st.session_state.keys()):
+            del st.session_state[key]
+        st.success("Berhasil logout. Sampai jumpa lagi ya, semangat terus! 💪")
+        st.experimental_rerun()
 
-if menu == "Login":
+# ============== Jalankan Aplikasi ==============
+if not st.session_state.logged_in:
     login_register_page()
-
-elif menu == "Register":
-    show_register_form()
-
-elif menu == "Logout":
-    st.session_state.logged_in = False
-    st.session_state.username = ""
-    st.session_state.show_register = False
-    st.success("Berhasil logout. Sampai jumpa lagi ya, semangat terus! 💪")
-    st.experimental_rerun()
-
-
-
-# ========== Main ==========
-if st.session_state.logged_in:
-    main_app()
 else:
-    login_register_page()
+    main_app()
