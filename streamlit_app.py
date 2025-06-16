@@ -254,12 +254,21 @@ def main_app():
             "memahami perasaan dan kebiasaan harian secara lebih personal."
         )
 
- elif menu == "Logout":
+menu = st.sidebar.selectbox("Menu", ["Login", "Register", "Logout"])
+
+if menu == "Login":
+    login_register_page()
+
+elif menu == "Register":
+    show_register_form()
+
+elif menu == "Logout":
     st.session_state.logged_in = False
     st.session_state.username = ""
     st.session_state.show_register = False
     st.success("Berhasil logout. Sampai jumpa lagi ya, semangat terus! 💪")
     st.experimental_rerun()
+
 
 
 # ========== Main ==========
