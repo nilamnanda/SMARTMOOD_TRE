@@ -249,7 +249,8 @@ def main_app():
         for key in list(st.session_state.keys()):
             del st.session_state[key]
         st.success("Berhasil logout. Sampai jumpa lagi ya, semangat terus! 💪")
-        st.experimental_rerun()
+        st.rerun()  # ✅ versi terbaru yang benar
+
 
 # ============== Jalankan Aplikasi ==============
 if not st.session_state.logged_in:
