@@ -207,11 +207,7 @@ def main_app():
             else:
                 st.warning("Pilih minimal satu aktivitas.")
 
-
            
-
-            else:
-                st.warning("Pilih minimal satu aktivitas.")
 
     elif menu == "Lihat Grafik Mood":
         if os.path.exists(DATA_FILE):
