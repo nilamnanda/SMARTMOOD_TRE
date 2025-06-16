@@ -19,7 +19,7 @@ if 'username' not in st.session_state:
     st.session_state.username = ""
 
 DATA_FILE = "smartmood_data.csv"
-USER_FILE = "users.json"
+UUSER_FILE = "users.csv"
 
 # ================== Utility Functions ==================
 def hash_password(password):
@@ -27,13 +27,14 @@ def hash_password(password):
 
 def load_users():
     if os.path.exists(USER_FILE):
-        with open(USER_FILE, "r") as f:
-            return json.load(f)
+        df = pd.read_csv(USER_FILE)
+        return dict(zip(df['username'], df['password']))
     return {}
 
 def save_users(users):
-    with open(USER_FILE, "w") as f:
-        json.dump(users, f)
+    df = pd.DataFrame(list(users.items()), columns=['username', 'password'])
+    df.to_csv(USER_FILE, index=False)
+
 
 # ============== Mood Activity Categories ==============
 aktivitas_kategori = {
