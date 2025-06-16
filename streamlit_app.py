@@ -27,13 +27,14 @@ def hash_password(password):
 
 def load_users():
     if os.path.exists(USER_FILE):
-        df = pd.read_csv(USER_FILE)
-        return dict(zip(df['username'], df['password']))
+        with open(USER_FILE, "r") as f:
+            return json.load(f)
     return {}
 
 def save_users(users):
-    df = pd.DataFrame(list(users.items()), columns=['username', 'password'])
-    df.to_csv(USER_FILE, index=False)
+    with open(USER_FILE, "w") as f:
+        json.dump(users, f)
+
 
 
 # ============== Mood Activity Categories ==============
