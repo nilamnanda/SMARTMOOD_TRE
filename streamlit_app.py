@@ -193,7 +193,17 @@ def main_app():
                     <b>Mood kamu hari ini: {'😊' if kategori == 'Bahagia' else '😢' if kategori == 'Sedih' else '😐'} {kategori}</b><br><br>
                     {diagnosis_aktivitas(aktivitas_dipilih)}</div>
                     """, unsafe_allow_html=True)
-                st.markdown(f"> 💡 {kutipan_motivasi()}")
+                # Penilaian level mood
+if mood <= 2:
+    saran_level = "buruk"
+elif mood == 3:
+    saran_level = "cukup"
+else:
+    saran_level = "baik"
+
+# Tampilkan kutipan motivasi sesuai level
+st.markdown(f"> 💡 {kutipan_motivasi(saran_level)}")
+
             else:
                 st.warning("Pilih minimal satu aktivitas.")
 
