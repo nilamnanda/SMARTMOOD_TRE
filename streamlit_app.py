@@ -183,7 +183,7 @@ def main_app():
         mood = st.slider("Rating mood hari ini (1-5)", 1, 5, 3)
         catatan = st.text_area("Catatan harian (opsional):")
 
-     if st.button("✅ Simpan"):
+    if st.button("✅ Simpan"):
     if aktivitas_dipilih:
         simpan_data(tanggal, st.session_state.username, mood, aktivitas_dipilih, catatan)
         kategori = klasifikasi_mood(mood, aktivitas_dipilih)
