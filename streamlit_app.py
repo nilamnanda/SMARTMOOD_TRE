@@ -141,7 +141,8 @@ def login_register_page():
                 st.session_state.logged_in = True
                 st.session_state.username = username
                 st.success(f"Selamat datang kembali, {username}!")
-                st.experimental_rerun()
+                st.rerun()
+
             else:
                 st.error("Password salah.")
         else:
@@ -150,7 +151,8 @@ def login_register_page():
             st.success(f"Akun baru dibuat untuk {username}. Selamat datang!")
             st.session_state.logged_in = True
             st.session_state.username = username
-            st.experimental_rerun()
+            st.rerun()
+
 
 # ============== Main App ==============
 def main_app():
