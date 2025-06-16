@@ -17,10 +17,14 @@ DATA_FILE = "smartmood_data.csv"
 USER_FILE = "users.json"
 
 # ========== State Session ==========
+# ========== State Session ==========
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 if "username" not in st.session_state:
     st.session_state.username = ""
+if "show_register" not in st.session_state:
+    st.session_state.show_register = False
+
 
 # ========== Utility ==========
 def hash_password(password):
