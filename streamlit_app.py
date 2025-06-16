@@ -109,20 +109,27 @@ def diagnosis_aktivitas(aktivitas):
     else:
         return "\n".join(random.sample(pesan, min(3, len(pesan))))
 
-def kutipan_motivasi():
-    quotes = [
-        "🌤 Setiap pagi adalah kesempatan untuk memulai ulang dengan lebih baik.",
-        "🌱 Pelan-pelan tidak apa-apa, yang penting kamu tetap berjalan.",
-        "💖 Tidak semua hari harus produktif. Kadang bertahan aja udah hebat.",
-        "🌈 Kamu tidak harus kuat setiap saat, yang penting kamu terus mencoba.",
-        "☕ Tarik napas dalam-dalam. Kamu sudah sejauh ini. Lanjutkan dengan lembut.",
-        "🕊 Kadang, istirahat adalah bentuk kemajuan yang tersembunyi.",
-        "🌙 Hari ini mungkin berat, tapi malam selalu membawa harapan baru.",
-        "🔥 Kamu punya kekuatan untuk melewati ini, bahkan jika kamu belum merasakannya sekarang.",
-        "📖 Hidup tidak selalu soal hasil, tapi tentang perjalanan dan cerita yang kamu buat.",
-        "🫶 Kamu tidak sendiri. Banyak orang sedang berjuang seperti kamu—dan itu nggak apa-apa."
-    ]
-    return random.choice(quotes)
+def kutipan_motivasi(saran_level):
+    quotes_map = {
+        "buruk": [
+            "💖 Perasaanmu valid. Kamu berhak istirahat tanpa merasa bersalah.",
+            "🌙 Gelapnya malam tidak selamanya. Cahaya pagi akan datang juga.",
+            "🕊 Ambil waktu untuk dirimu sendiri. Ketenangan itu juga produktif."
+        ],
+        "cukup": [
+            "☕ Pelan-pelan saja. Tidak semua orang berjalan dengan kecepatan yang sama.",
+            "📖 Hidup bukan perlombaan. Nikmati setiap babnya, termasuk yang sulit.",
+            "🌈 Kamu sedang tumbuh, meskipun sekarang rasanya lambat atau tidak terlihat."
+        ],
+        "baik": [
+            "🌤 Hari yang baik! Teruskan langkahmu, dan jaga dirimu tetap seimbang.",
+            "🌱 Maju satu langkah kecil pun tetaplah kemajuan. Kamu sedang bertumbuh.",
+            "🔥 Teruskan semangatmu, tapi jangan lupa rehat juga ya."
+        ]
+    }
+
+    # ambil kutipan pertama dari kategori tersebut (atau bisa pakai index tertentu jika mau dinamis)
+    return quotes_map.get(saran_level, ["🌱 Tetap semangat, satu hari satu langkah."])[0]
 
 # ============== Login/Register Page ==============
 def login_register_page():
